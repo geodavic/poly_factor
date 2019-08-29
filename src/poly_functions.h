@@ -1,21 +1,13 @@
+//Function library for all polynomial factorization files (these files must also include mpz_algebraic.h, which this references extensively)
+
+//----major changes------------//
 //GDT 01.2018
 //    05.2018
 //    07.2018
 //---------about---------------//
 
-//function library for all polynomial factorization files (these files must also include mpz_algebraic.h, which this references extensively)
-//polynomial facorization algorithm: find root of f(x) using Newton's method -> use LLL to find algebraic relation on root -> get irreducible divisor of f(x) -> repeat on quotient
-//assume f(x) monic for now
-
-//----------notes---------------//
-
-//not a guaranteed algorithm, since LLL method won't always find minimal polynomial, but is nearly guaranteed. Higher precision -> higher likelihood of finding a factor
-//LLL is polynomial time, but method requires high precision arithmetic, so it doesn't scale well to higher degree polynomials (see complexity below)
-//compleixity for one factorization is approximately O(n^6*A^3), where n is the degree of the input polynomial and A = n+PRECISION*log(2); for fixed (and reasonable) precision, this is O(n^9).
-//there is a trade-off between the parameters PRECISION and delta (the LLL parameter). Lower values of delta make LLL run faster, but be less accurate. Raising PRECISION a certain amount will fix this, but at the cost of slower computations. Raising delta makes LLL slower but allows for lower PRECISION, hence faster gmp computations. Not sure where the sweet spot is yet.
 
 //------------TODO------------------//
-
 //implement irreducibility tests
 //			- Eisenstein (plus shifts?)
 //      - Perron's criterion

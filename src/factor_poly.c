@@ -1,19 +1,27 @@
+/*
+
+George D. Torres, 2017.
+Polynomial factorization using LLL. 
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
 #include <ctype.h>
 #include "mpz_algebraic.h" //includes gmp.h, mpfr.h, mpc.h, math.h
-#include "poly_functions.h" //function library for polynomial factorization
+#include "poly_functions.h" //function library for polynomials
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
+//----major-changes-------------//
 //GDT 01.2018
 //    05.2018
 //    07.2018
 
-//---------about---------------//
+//---------about----------------//
 
 //polynomial facorization algorithm: find root of f(x) using Newton's method -> use LLL to find algebraic relation on root -> get irreducible divisor of f(x) -> repeat on quotient
 //assume f(x) monic for now
@@ -22,15 +30,23 @@
 //syntax: ./factor_poly <polynomial in csv> <-v for verbose mode> <-t for time display>
 //      csv polynomial example: x^2 - x + 3 is encoded as 3,-1,1
 //		if both verbosity and time are required, can use -vt or -tv
-//there is a python script in ../msc_code that will parse a polynomial into csv format
+//there is a python script in msc_code that will parse a polynomial into csv format
 
-//-------------TODO-----------------//
+//----------notes---------------//
+
+//not a guaranteed algorithm, since LLL method won't always find minimal polynomial, but is nearly guaranteed. Higher precision -> higher likelihood of finding a factor
+//LLL is polynomial time, but method requires high precision arithmetic, so it doesn't scale well to higher degree polynomials (see complexity below)
+//compleixity for one factorization is approximately O(n^6*A^3), where n is the degree of the input polynomial and A = n+PRECISION*log(2); for fixed (and reasonable) precision, this is O(n^9).
+//there is a trade-off between the parameters PRECISION and delta (the LLL parameter). Lower values of delta make LLL run faster, but be less accurate. Raising PRECISION a certain amount will fix this, but at the cost of slower computations. Raising delta makes LLL slower but allows for lower PRECISION, hence faster gmp computations. Not sure where the sweet spot is yet.
+
+
+//----------TODO----------------//
 //replace python script with c script to parse polynomial input
 
 //It seems like calling factorize_full many times leads to segfaults sometimes. This is likely due to memory not being cleared somewhere. Need to find where the buildup is. UPDATE: rand memory leak detection with valgrind and fixed a few malloc bugs. This didn't fix the issue, however. 
 //continue messing with valgrind. Suspect possible bug in GMP?
 
-//IDEAS: - multi-thread the starting root. Execute same alg for different roots so that roots of low degree are more likely to be found first.
+//multi-thread the starting root. Execute same alg for different roots so that roots of low degree are more likely to be found first.
 
 
 int read_poly(char *polystr,mpz_t *poly,int poly_len); //not working
@@ -273,7 +289,7 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
 
 	//no arguments passed
 	if(argc==1){
-		printf("Input is a monic polynomial in Z[x], written without spaces (e.g. x^2-x+2)\nFormat: <polynomial> <-OPTS>\n        OPTS: -v: verbosity\n              -t: timer\n              -p: precision in bits (e.g. -p 150). Default is 64, minimum of 16.\n              -d: LLL parameter (0.25<d<1). Default is 0.3.\n");
+		printf("Input is a monic polynomial in Z[x], written without spaces (e.g. x^2-x+2)\nFormat: <polynomial> <OPTS>\n        OPTS: -v: verbosity\n              -t: timer\n              -p: precision in bits (e.g. -p 150). Default is 64, minimum of 16.\n              -d: LLL parameter (0.25<d<1). Default is 0.3.\n");
 		return 0;
 	}
 	//get putative polynomial length and set options

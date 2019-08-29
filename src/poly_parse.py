@@ -1,4 +1,5 @@
 #parse polynomial into csv format
+#e.g. x^4-1  ->  -1,0,0,1
 
 import sys
 

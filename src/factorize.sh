@@ -1,7 +1,6 @@
 #!/bin/bash
-#shell script for the binary 'factorize', which factors a given polynomial input
+#shell script for the binary 'factor_poly', which factors a given polynomial input
 #passes intput to python script which parses and passes polynomial to c function
-#five possible arguments for now
 
 argstr="${@:2}"
 

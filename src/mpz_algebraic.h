@@ -1,4 +1,5 @@
 //GDT 12.2017
+
 //---------about-----------------//
 
 //function library for mpz_algebraic and all other related files
@@ -8,7 +9,7 @@
 
 //speedup notes: - removed ACC condition on project(), seems to save a bit of time. 
 //               - tried to start g.s. at k instead of 0, since starting at 0 does some unnecessary computation. This seems to break it. not sure why. EDIT: fixed.
-//				 - tried replacing Mpf_round with mpfr_get_z inside LLL for perhaps a small speedup.
+//				 			 - tried replacing Mpf_round with mpfr_get_z inside LLL for perhaps a small speedup.
 //               - looks like gram schmidt is the bottleneck of LLL (~93% of cpu time)
 
 //-----------TODO-----------------//
@@ -17,11 +18,10 @@
 // maybe also look into more efficient LLL modification
 
 
-//arbitrary precision libraries
+//arbitrary precision and math libraries
 #include <gmp.h>
 #include <mpc.h>
 #include <mpfr.h>
-
 #include <math.h>
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
