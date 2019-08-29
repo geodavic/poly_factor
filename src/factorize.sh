@@ -4,7 +4,6 @@
 
 argstr="${@:2}"
 
-rootstr=/Users/David/Documents/Maths/c/algebraic_numbers/factorization
-$rootstr/commandline_factor/factor_poly $(python $rootstr/msc_code/poly_parse.py $1) $argstr
+../factor_poly $(python ../msc_code/poly_parse.py $1) $argstr
 
 
