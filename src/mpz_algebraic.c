@@ -47,8 +47,8 @@ int main(int argc, char *argv[]){
 	
 	//print statements and variable reading
 	printf("_____________________________________________\n\n");
-	printf("|     Check that a number is algebraic!     |\n");
-	printf("|-Now with arbitrary precision              |\n");
+	printf("|     Check that a number is algebraic      |\n");
+	printf("| -Now with arbitrary precision             |\n");
 	printf("|                                           |\n");
 	printf("|                         GDT December 2017 |\n");
 	printf("---------------------------------------------\n\n");

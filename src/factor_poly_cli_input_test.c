@@ -50,6 +50,7 @@ Polynomial factorization using LLL.
 //multi-thread the starting root. Execute same alg for different roots so that roots of low degree are more likely to be found first.
 
 
+int read_poly_better(char *polystr,char *csvstr);
 char *str_replace(char *orig, char *rep, char *with);
 int read_poly(char *polystr,mpz_t *poly,int poly_len);
 int read_degree(char *polystr);
@@ -72,6 +73,12 @@ int main(int argc,char *argv[]){
 	mpz_t *poly; //polynomial coefficients
 	mpz_t *allfactors; //factors list
 
+	int a;
+	char *test_str="x^3+x^2+3x-2";
+	char *csvstr=NULL;
+	printf("%s\n",test_str);
+	a=read_poly_better(test_str,csvstr);
+	printf("%d\n",a);
 
 	//read command line parameters
 	if(parameter_set(argc,argv,&PRECISION,&verbosity,&timer,&delta,&poly_len)==0)
@@ -189,6 +196,64 @@ char *str_replace(char *orig, char *rep, char *with) {
     }
     strcpy(tmp, orig);
     return result;
+}
+
+//read polynomial to csv
+//idea: use regex to extract monomials
+//returns poly_len
+//Not working: bus error
+int read_poly_better(char *polystr,char *csvstr){
+	//int deg=0;
+	int term_count=0;
+	int status;
+	regex_t re;
+	regmatch_t term[5];
+	char *p=polystr;
+	char *pattern="([-])*\\s*(\\d*)(x?)([\\^\\d]*)";
+
+	//regularize terms
+	p=str_replace(p,"-","+-");
+
+	//count number of terms
+	while(*p){
+		if(*p=='+'){
+			term_count++;	
+		}
+		p++;
+	}
+	term_count++;
+
+	//use regex to find terms
+	p = polystr;
+	if (regcomp(&re,pattern,REG_EXTENDED) != 0 ){
+		//error in compiling regex
+		return(0);
+	}
+	printf("term_count=%d\n",term_count);	
+	int start,stop;
+	status=regexec(&re,p,term_count+2,term,0);
+	int counter=0;
+	while(status==0 && counter<5){
+		start=(int)(term[0].rm_so);
+		stop=(int)(term[0].rm_eo);
+		printf("start=%d,stop=%d\n",start,stop);
+		//matched term as string
+		char termbuff[stop-start+1];
+		memcpy(termbuff,&p[start],stop-start);
+		termbuff[stop-start]='\0';
+
+		printf("%s\n",termbuff);
+
+		//find next match
+		p=p+stop;
+		printf("%s\n",p);
+		status=regexec(&re,p,term_count+2,term,0);
+		counter++;
+	}
+	
+	regfree(&re);
+
+	return(1);
 }
 
 //read polynomial from polystr; return length (=degree+1), length 0 if failed
