@@ -15,3 +15,7 @@ There is also a shell script version of ```factor_poly``` located in ```src``` t
 factorize.sh x^4-1
 ```
 This will have the same output as ```./factor_poly -1,0,0,0,1```. 
+
+## Dependencies
+
+Compiling requires the libraries ```gmp 5.+```, ```mpfr 1.1+```, and ```mpc 3.+```. 
