@@ -22,8 +22,7 @@ Compiling requires the libraries ```gmp 5.+```, ```mpfr 1.1+```, and ```mpc 3.+`
 
 ## Unit test
 
-The following is a good unit test for development. Factorize the polynomial x^18 + 3 x^17 + 6 x^16 + 2 x^15 + 5 x^14 + 9 x^13 - 5 x^12 - 3 x^10 - 17 x^9 - 3 x^7 - 16 x^6 + 5 x^5 + 9 x^4 - 5 x^3 + 3 x^2 + 6 x. The result should be:
-
+The following is a good unit test for development. It consists of factoring a large degree polynomial that has repeated factors.
 ```
 ./factorize.sh x^18+3x^17+6x^16+2x^15+5x^14+9x^13-5x^12-3x^10-17x^9-3x^7-16x^6+5x^5+9x^4-5x^3+3x^2+6x
 
