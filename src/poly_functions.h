@@ -852,8 +852,7 @@ int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosit
         mpz_set_ui(q[i],0);
     }
 
-    if(verbosity){
-        printf("-----------------------------------------------------------------------------\n\n");}
+    
     while(is_reducible&&degree_q>0){
         //find a factor
         is_reducible=find_factor_cx(poly,d,q,degree_q+1,PRECISION,verbosity,delta);
@@ -879,8 +878,6 @@ int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosit
         for(i=0;i<poly_len;i++)
             mpz_set(poly[i],q[i]);
     }
-    if(verbosity){
-        printf("-----------------------------------------------------------------------------\n");}
 
     //clear variables
     for(i=0;i<poly_len;i++){
@@ -941,7 +938,11 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int ver
             return 0;
         }
         exp_count++;
-        if(verbosity){printf("Factoring exponent-free part #%d\n",exp_count);};
+        if(verbosity){
+            printf("Factoring exponent-free part #%d\n",exp_count);
+            printf("-----------------------------------------------------------------------------\n\n");
+        }
+
         new_factors=factorize(stripped,poly_len,PRECISION,&factors[total_factors*poly_len],verbosity,delta);
         if(new_factors==0){
             for(i=0;i<poly_len;i++){
@@ -980,7 +981,6 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int ver
         }
         total_factors=total_factors+new_factors;
     }
-
 
     //clear variables
     for(i=0;i<poly_len;i++){
