@@ -8,6 +8,7 @@
 
 
 //------------TODO------------------//
+//in print_factors(), print repeated factors with power notation
 //implement irreducibility tests
 //			- Eisenstein (plus shifts?)
 //      - Perron's criterion
