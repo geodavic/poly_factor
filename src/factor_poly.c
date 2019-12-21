@@ -109,10 +109,13 @@ int cli_factor(int argc, char *argv[]) {
 
         return 0;
     }
-    printf("Polynomial input:\n");
+    printf("Polynomial input: ");
     print_poly(poly_len,poly,1);
     if(verbosity){
         printf("\n");
+        printf("================================================================================================\n");
+        printf("Begin factorization\n");
+        printf("================================================================================================\n\n");
     };
 
 
@@ -130,6 +133,10 @@ int cli_factor(int argc, char *argv[]) {
 
         return 0;
     }
+    else if(verbosity && trivial_power>0){
+        printf("Trivial factor found:\n");
+        printf("x^%d\n\n",trivial_power);
+    }
 
 
     //factor it
@@ -137,6 +144,12 @@ int cli_factor(int argc, char *argv[]) {
     factor_counter=factorize_full(poly,poly_len,PRECISION,allfactors,verbosity,delta);	
     diff=clock()-start;
     int msec_time=diff*1000/CLOCKS_PER_SEC;
+
+    if(verbosity){
+        printf("================================================================================================\n");
+        printf("End\n");
+        printf("================================================================================================\n\n");
+    }
 
     //print factors
     if(factor_counter>0){printf("Factorization:\n");
@@ -158,7 +171,7 @@ int cli_factor(int argc, char *argv[]) {
 
     //print time taken
     if(timer)
-        printf("\nTime: %dms\n",msec_time);
+        printf("Time: %dms\n",msec_time);
 
 
     //clear variables
