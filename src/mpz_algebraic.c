@@ -3,7 +3,8 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
-#include "mpz_algebraic.h" //homemade library 
+#include "mpz_algebraic.h" //homemade libraries
+#include "poly_functions.h" //for polynomial print
 
 //GDT 12.2017
 //---------about-----------------//
@@ -12,6 +13,7 @@
 //compile with 'gcc -Wall -Wextra -o mpz_algebraic mpz_algebraic.c -lgmp -lmpfr'
 //first attempt with GMP libraries
 //First working version: 12/25/17
+//Mostly spaghetti code at the moment
 
 //----------notes---------------//
 
@@ -31,133 +33,133 @@
 #define STR_MAX 8192 //maximum number of digits of alpha
 
 int main(int argc, char *argv[]){
-	int deg,i,input_fail,past_dot,precision_given;
-	int PRECISION;//,ACC;
-	int sig_digits=0;
-	char inputStr[STR_MAX];
-	int verbose=1;
+    int deg,i,input_fail,past_dot,precision_given;
+    int PRECISION;//,ACC;
+    int sig_digits=0;
+    char inputStr[STR_MAX];
+    int verbose=1;
 
-	mpf_t alpha; //input float
-	mpf_t delta; //LLL parameter
+    mpf_t alpha; //input float
+    mpf_t delta; //LLL parameter
 
-	if(argc==2){
-		if(strcmp(argv[1],"-v")==0)
-			verbose=1; //verbosity option 
-	}
-	
-	//print statements and variable reading
-	printf("_____________________________________________\n\n");
-	printf("|     Check that a number is algebraic      |\n");
-	printf("| -Now with arbitrary precision             |\n");
-	printf("|                                           |\n");
-	printf("|                         GDT December 2017 |\n");
-	printf("---------------------------------------------\n\n");
-	printf("Enter number: ");
-	printf("(more digits preferable)\n");
-	scanf("%s",inputStr);
+    if(argc==2){
+        if(strcmp(argv[1],"-v")==0)
+            verbose=1; //verbosity option 
+    }
 
-	//check if its an integer
-	past_dot=0;
-	for(i=0;inputStr[i]!='\0';i++){
-		if(inputStr[i]=='.'){
-			past_dot=1;
-			break;
-		}
-	}
-	if(past_dot==0){
-		printf("Integer entered! This is clearly algebraic\n");	
-		return 0;
-	}
+    //print statements and variable reading
+    printf("_____________________________________________\n\n");
+    printf("|     Check that a number is algebraic      |\n");
+    printf("| -Now with arbitrary precision             |\n");
+    printf("|                                           |\n");
+    printf("|                         GDT December 2017 |\n");
+    printf("---------------------------------------------\n\n");
+    printf("Enter number: ");
+    printf("(more digits preferable)\n");
+    scanf("%s",inputStr);
 
-	//get degree of alpha
-	printf("Enter degree: ");
-	printf("(enter exact degree if known)\n");
-	scanf("%d",&deg);
-	printf("\n");
-	if(deg<=0){
-		printf("Degree must be positive.\n");
-		return 0;
-	}
+    //check if its an integer
+    past_dot=0;
+    for(i=0;inputStr[i]!='\0';i++){
+        if(inputStr[i]=='.'){
+            past_dot=1;
+            break;
+        }
+    }
+    if(past_dot==0){
+        printf("Integer entered! This is clearly algebraic\n");	
+        return 0;
+    }
 
-	//get sig_digits
-	sig_digits=sig(inputStr,deg);
-	//printf("sig_digits: %d\n",sig_digits);
+    //get degree of alpha
+    printf("Enter degree: ");
+    printf("(enter exact degree if known)\n");
+    scanf("%d",&deg);
+    printf("\n");
+    if(deg<=0){
+        printf("Degree must be positive.\n");
+        return 0;
+    }
 
-	//set precision level and ACC
-	precision_given=(int)(sig_digits*log2(10));
-	PRECISION=precision_given+3;
-	//ACC=MIN(900,9*PRECISION/10);
-	
+    //get sig_digits
+    sig_digits=sig(inputStr,deg);
+    //printf("sig_digits: %d\n",sig_digits);
 
-	//initialize alpha and delta with specified bits of precision
-	mpf_init2(alpha,PRECISION); 
-	mpf_set_ui(alpha,0);
+    //set precision level and ACC
+    precision_given=(int)(sig_digits*log2(10));
+    PRECISION=precision_given+3;
+    //ACC=MIN(900,9*PRECISION/10);
 
-	mpf_init2(delta,PRECISION);
-	mpf_set_d(delta,0.75); //LLL parameter
 
-	//read input string into alpha
-	input_fail=mpf_set_str(alpha,inputStr,10); 
-	if(input_fail){
-		printf("read error! Input must only contain 0-9 and at most one '.' and 'e'\n");
-		return 0;
-	}
+    //initialize alpha and delta with specified bits of precision
+    mpf_init2(alpha,PRECISION); 
+    mpf_set_ui(alpha,0);
 
-	//print precision given
-	if(!input_fail&&verbose){
-		printf("precision needed: %d bits (operating with %d bits)",precision_given,PRECISION);
-		printf("\n\n");
-	}
+    mpf_init2(delta,PRECISION);
+    mpf_set_d(delta,0.75); //LLL parameter
 
-	//create and print basis matrix
-	mpz_t *basis;
-	basis=malloc((deg+1)*(deg+2)*sizeof(mpz_t));
-	for(i=0;i<(deg+1)*(deg+2);i++){
-		mpz_init(basis[i]);	
-	}
-	create_basis(basis,alpha,deg,sig_digits,PRECISION);
-	if(verbose){
-	printf("Initial lattice basis:\n");
-	print_matrix_i(deg+2,deg+1,10,basis);
-	}
+    //read input string into alpha
+    input_fail=mpf_set_str(alpha,inputStr,10); 
+    if(input_fail){
+        printf("read error! Input must only contain 0-9 and at most one '.' and 'e'\n");
+        return 0;
+    }
 
-	if(verbose){
-	printf("---------------------------------------------\n\n");
-	printf("searching for minimal polynomial...\n\n");
-	printf("---------------------------------------------\n\n");
-	}
+    //print precision given
+    if(!input_fail&&verbose){
+        printf("precision needed: %d bits (operating with %d bits)",precision_given,PRECISION);
+        printf("\n\n");
+    }
 
-	//perform LLL
-	clock_t start=clock(),diff;
-	LLL(deg+2,deg+1,basis,delta,PRECISION);
-	diff=clock()-start;
-	if(verbose){
-	printf("\nReduced lattice basis:\n");
-	print_matrix_i(deg+2,deg+1,10,basis);
-	}
+    //create and print basis matrix
+    mpz_t *basis;
+    basis=malloc((deg+1)*(deg+2)*sizeof(mpz_t));
+    for(i=0;i<(deg+1)*(deg+2);i++){
+        mpz_init(basis[i]);	
+    }
+    create_basis(basis,alpha,deg,sig_digits,PRECISION);
+    if(verbose){
+        printf("Initial lattice basis:\n");
+        print_matrix_i(deg+2,deg+1,10,basis);
+    }
 
-	int msec_time= diff *1000/CLOCKS_PER_SEC;
+    if(verbose){
+        printf("---------------------------------------------\n\n");
+        printf("searching for minimal polynomial...\n\n");
+        printf("---------------------------------------------\n\n");
+    }
 
-	//pick out shortest vector, divide by largest power of x dividing the polynomial it represents
-	printf("Likely minimal polynomial:\n");
+    //perform LLL
+    clock_t start=clock(),diff;
+    LLL(deg+2,deg+1,basis,delta,PRECISION);
+    diff=clock()-start;
+    if(verbose){
+        printf("\nReduced lattice basis:\n");
+        print_matrix_i(deg+2,deg+1,10,basis);
+    }
 
-	int poly_len=deg+1;
-	i=0;
-	while(mpz_sgn(basis[i])==0){
-		i++;
-		poly_len--;
-	}
-	print_poly(poly_len,&basis[i]);
-	if(verbose)
-		printf("\nTime: \n%d.%ds\n",msec_time/1000,msec_time%1000);
+    int msec_time= diff *1000/CLOCKS_PER_SEC;
 
-	//clear mp variables
-	mpf_clear(alpha);
-	mpf_clear(delta);
-	for(i=0;i<(deg+1)*(deg+2);i++)
-		mpz_clear(basis[i]);
-	free(basis);
-	return 1;
+    //pick out shortest vector, divide by largest power of x dividing the polynomial it represents
+    printf("Likely minimal polynomial:\n");
+
+    int poly_len=deg+1;
+    i=0;
+    while(mpz_sgn(basis[i])==0){
+        i++;
+        poly_len--;
+    }
+    print_poly(poly_len,&basis[i],1);
+    if(verbose)
+        printf("\nTime: \n%d.%ds\n",msec_time/1000,msec_time%1000);
+
+    //clear mp variables
+    mpf_clear(alpha);
+    mpf_clear(delta);
+    for(i=0;i<(deg+1)*(deg+2);i++)
+        mpz_clear(basis[i]);
+    free(basis);
+    return 1;
 }
 
 

@@ -32,7 +32,7 @@ int main(){
 		
 	gcd(pp,p,r,poly_len);
 	
-	print_poly(poly_len,r);
+	print_poly(poly_len,r,1);
 
 	return 0;
 }

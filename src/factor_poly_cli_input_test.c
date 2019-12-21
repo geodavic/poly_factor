@@ -105,7 +105,7 @@ int main(int argc,char *argv[]){
 		return 0;
 	}
 	printf("Polynomial input:\n");
-	print_poly(poly_len,poly);
+	print_poly(poly_len,poly,1);
 	if(verbosity){
 		printf("\n");
 	};
@@ -131,7 +131,7 @@ int main(int argc,char *argv[]){
 	if(trivial_power>0)
 		printf("x^%d\n",trivial_power);
 	for(j=0;j<factor_counter;j++)
-		print_poly(poly_len,&allfactors[j*poly_len]);
+		print_poly(poly_len,&allfactors[j*poly_len],1);
 	}
 
 
