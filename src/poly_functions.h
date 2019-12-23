@@ -1068,7 +1068,8 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *m
     derivative(p,pp,poly_len);
     gcd(p,pp,gcd_p,poly_len);
 
-    if(degree(gcd_p,poly_len)>0){//if higher multiplicity factors exist (p is not square-free)
+    int gcd_deg=degree(gcd_p,poly_len);
+    if(gcd_deg>0){//if higher multiplicity factors exist (p is not square-free)
         if(polydivide(p,gcd_p,stripped,poly_len)!=0){//strip off pice with no repeated factors 
             printf("gcd wasn't a divisor!\n");
             for(i=0;i<poly_len;i++){
@@ -1114,31 +1115,33 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *m
     for(i=0;i<poly_len;i++)
         multiplicities[i]=0;
     
-    if(verbosity){printf("Counting multiplicities:\n");}
 
     //compute multiplicites of each factor
-    for(j=0;j<new_factors;j++){
-        //set p back to original polynomial
-        for(i=0;i<poly_len;i++)
-            mpz_set(p[i],gcd_p[i]);
-        mult=1;
-
-        //set pp to be the jth factor
-        for(i=0;i<poly_len;i++)
-            mpz_set(pp[i],factors[j*poly_len+i]);
-
-        //divide by pp until you can't
-        while(polydivide(p,pp,stripped,poly_len)==0){
-            mult++;
+    if(gcd_deg>0){
+        if(verbosity){printf("Counting multiplicities:\n");}
+        for(j=0;j<new_factors;j++){
+            //set p back to original polynomial
             for(i=0;i<poly_len;i++)
-                mpz_set(p[i],stripped[i]);
+                mpz_set(p[i],gcd_p[i]);
+            mult=1;
 
-        }
-        multiplicities[j]=mult;
-        if(verbosity){
-            printf("factor: ");
-            print_poly(poly_len,pp,0);
-            printf("\nmultiplicity: %d\n",mult);
+            //set pp to be the jth factor
+            for(i=0;i<poly_len;i++)
+                mpz_set(pp[i],factors[j*poly_len+i]);
+
+            //divide by pp until you can't
+            while(polydivide(p,pp,stripped,poly_len)==0){
+                mult++;
+                for(i=0;i<poly_len;i++)
+                    mpz_set(p[i],stripped[i]);
+
+            }
+            multiplicities[j]=mult;
+            if(verbosity){
+                printf("factor: ");
+                print_poly(poly_len,pp,0);
+                printf("\nmultiplicity: %d\n",mult);
+            }
         }
     }
 
