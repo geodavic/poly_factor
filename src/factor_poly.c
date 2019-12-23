@@ -11,7 +11,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <regex.h>
-#include "mpz_algebraic.h" //includes gmp.h, mpfr.h, mpc.h, math.h
+#include "lll_gs.h" //includes gmp.h, mpfr.h, mpc.h, math.h
 #include "poly_functions.h" //function library for polynomials
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -134,7 +134,7 @@ int cli_factor(int argc, char *argv[]) {
 
     //print factors
     if(factor_counter>0){printf("Factorization:\n");
-        print_factors(allfactors,multiplicities,factor_counter,poly_len,0,1);
+        print_factors(allfactors,multiplicities,factor_counter,poly_len,0,0);
         printf("\n");
     }
     else{

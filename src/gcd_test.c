@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../../mpz_algebraic.h"
-#include "../poly_functions.h"
+#include "lll_gs.h"
+#include "poly_functions.h"
 
 int main(){
 	int i,poly_len=6;

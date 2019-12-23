@@ -1,4 +1,4 @@
-//Function library for all polynomial factorization files (these files must also include mpz_algebraic.h, which this references extensively)
+//Function library for all polynomial factorization files (these files must also include lll_gs.h, which this references extensively)
 //see factor_poly.c for more detailed documentation
 
 //----major changes------------//

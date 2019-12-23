@@ -3,7 +3,7 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
-#include "mpz_algebraic.h" //homemade libraries
+#include "lll_gs.h" //homemade libraries
 #include "poly_functions.h" //for polynomial print
 
 //GDT 12.2017
