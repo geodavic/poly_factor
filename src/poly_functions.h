@@ -1,14 +1,12 @@
 //Function library for all polynomial factorization files (these files must also include mpz_algebraic.h, which this references extensively)
+//see factor_poly.c for more detailed documentation
 
 //----major changes------------//
 //GDT 01.2018
 //    05.2018
 //    07.2018
-//---------about---------------//
-
 
 //------------TODO------------------//
-//in print_factors(), print repeated factors with power notation
 //allow for non-monic polynomials
 //implement irreducibility tests
 //			- Eisenstein (plus shifts?)
@@ -32,8 +30,8 @@ void gcd(mpz_t *poly1, mpz_t *poly2, mpz_t *gcd, int poly_len);
 int find_factor(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION);
 int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,int verbosity,double d_delta);
 int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity,double delta);
-int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta);
-int factorize_full_improved(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta);
+int factorize_full_old(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta);
+int factorize_ful(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta);
 int monic_slide(int len, mpz_t *p);
 int monic_slide_dont_multiply(int len, mpz_t *p);
 void derivative(mpz_t *p,mpz_t *pp,int poly_len);
@@ -52,10 +50,17 @@ void print_poly(int len,const  mpz_t *x,int newline){
         sgn=mpz_sgn(x[i]);
         if(sgn > 0){
             if(mpz_cmp_ui(x[i],1)==0){
-                if(first_done)
-                    printf(" + x^%d",i);
+                if(first_done){
+                    if(i!=1)
+                        printf(" + x^%d",i);
+                    else
+                        printf(" + x");
+                }
                 else{
-                    printf("x^%d",i);
+                    if(i!=1)
+                        printf("x^%d",i);
+                    else
+                        printf("x");
                     first_done=1;
                 }
             }
@@ -63,21 +68,34 @@ void print_poly(int len,const  mpz_t *x,int newline){
                 if(first_done){
                     printf(" + ");
                     mpz_out_str(stdout,10,x[i]);
-                    printf("x^%d",i);
+                    if(i!=1)
+                        printf("x^%d",i);
+                    else
+                        printf("x");
                 }
                 else{
                     mpz_out_str(stdout,10,x[i]);
-                    printf("x^%d",i);
+                    if(i!=1)
+                        printf("x^%d",i);
+                    else
+                        printf("x");
                     first_done=1;
                 }
             }
         }
         if(sgn < 0){
             if(mpz_cmp_d(x[i],-1.0)==0){
-                if(first_done)
-                    printf(" - x^%d",i);
+                if(first_done){
+                    if(i!=1)
+                        printf(" - x^%d",i);
+                    else
+                        printf(" - x");
+                }
                 else{
-                    printf("-x^%d",i);
+                    if(i!=1)
+                        printf("-x^%d",i);
+                    else
+                        printf("-x");
                     first_done=1;
                 }
 
@@ -87,11 +105,17 @@ void print_poly(int len,const  mpz_t *x,int newline){
                     printf(" - ");
                     mpz_neg(abs,x[i]);
                     mpz_out_str(stdout,10,abs);
-                    printf("x^%d",i);
+                    if(i!=1)
+                        printf("x^%d",i);
+                    else
+                        printf("x");
                 }
                 else{
                     mpz_out_str(stdout,10,x[i]);
-                    printf("x^%d",i);
+                    if(i!=1)
+                        printf("x^%d",i);
+                    else
+                        printf("x");
                     first_done=1;
                 }
             }
@@ -366,7 +390,6 @@ int polydivide(mpz_t *p,mpz_t *d,mpz_t *out,int len){
         return_val=0;
     else
         return_val=1;
-
 
     //turn out into q (forgetting r): [reverse(q),reverse(r)] -> [q,0]
     for(i=len-deg_d;i<len;i++)
@@ -896,7 +919,8 @@ int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosit
 //factorizes poly even if it has repeated factors 
 //essentially calls factorize() on poly/gcd(poly,poly') and gcd(poly,poly')
 //iteratively, to mitigate factoring polynomials with repeated factors
-int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta){
+//this version does not have the multiplicities list
+int factorize_full_old(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta){
     //idea: strip off poly/gcd, call factorize(poly/gcd), set poly <- gcd. Repeat while gcd!=1
     int i,new_factors,total_factors=0,exp_count=0;
 
@@ -1002,8 +1026,10 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int ver
 }
 
 //same as above, but improved algorithm
+//If p = f_1^{n_1} * ... * f_k^{n_k}, then this first finds f_1,...,f_k then n_1,...,n_k
+//the f_i are stored in factors and the n_i are stored in multiplicities
 //finds the largest degree, square free factor. Factors that and then find the multiplicities of those factors
-int factorize_full_improved(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta){
+int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta){
     int i,j,mult,new_factors=0;
 
     //if it is degree 1 or less: we are done
@@ -1012,7 +1038,8 @@ int factorize_full_improved(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factor
             mpz_set(factors[i],poly[i]);
         return 1;
     }
-
+    
+    //allocate auxillary polynomials used
     mpz_t *p=malloc(poly_len*sizeof(mpz_t));
     mpz_t *pp=malloc(poly_len*sizeof(mpz_t));
     mpz_t *gcd_p=malloc(poly_len*sizeof(mpz_t));
@@ -1026,6 +1053,18 @@ int factorize_full_improved(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factor
         mpz_set(p[i],poly[i]);
     }
 
+    //check that it is monic and divide out by highest power of x dividing it
+    int trivial_power=monic_slide_dont_multiply(poly_len,p);
+    if(trivial_power<0){
+        printf("Polynomial not monic. Unable to divide.\n");
+        return 0;
+    }
+    else if(verbosity && trivial_power>0){
+        printf("Trivial factor found:\n");
+        printf("x^%d\n\n",trivial_power);
+    }
+
+    //compute gcd of p and p'
     derivative(p,pp,poly_len);
     gcd(p,pp,gcd_p,poly_len);
 
@@ -1073,15 +1112,16 @@ int factorize_full_improved(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factor
 
     //ensure multiplicities are all zero to start
     for(i=0;i<poly_len;i++)
-        *(multiplicities+i)=0;
-
+        multiplicities[i]=0;
+    
+    if(verbosity){printf("Counting multiplicities:\n");}
 
     //compute multiplicites of each factor
     for(j=0;j<new_factors;j++){
         //set p back to original polynomial
         for(i=0;i<poly_len;i++)
-            mpz_set(p[i],poly[i]);
-        mult=0;
+            mpz_set(p[i],gcd_p[i]);
+        mult=1;
 
         //set pp to be the jth factor
         for(i=0;i<poly_len;i++)
@@ -1095,6 +1135,20 @@ int factorize_full_improved(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factor
 
         }
         multiplicities[j]=mult;
+        if(verbosity){
+            printf("factor: ");
+            print_poly(poly_len,pp,0);
+            printf("\nmultiplicity: %d\n",mult);
+        }
+    }
+
+    //add x^i to list of factors 
+    if(trivial_power>0){
+        for(i=0;i<poly_len;i++)
+            mpz_set_ui(factors[new_factors*poly_len+i],0);
+        mpz_set_ui(factors[new_factors*poly_len+trivial_power],1);
+        multiplicities[new_factors]=1;
+        new_factors++;
     }
 
     //clear variables
@@ -1117,7 +1171,6 @@ int factorize_full_improved(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factor
 //make sure p is monic and divide out by highest power of x dividing p
 //if the leading coefficient is -1, multiply through by -1 and proceed
 //return highest power of x dividing p, -1 if not monic
-//TODO: if multiplied by -1 through, need to give a -1 coefficient to one of the factors later on (maybe just remove that part?)
 int monic_slide(int len, mpz_t *p){
     int first_nz=0;
     int last_nz=len-1;

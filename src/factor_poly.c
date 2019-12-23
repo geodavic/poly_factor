@@ -3,7 +3,7 @@
    George D. Torres, 2017.
    Polynomial factorization using LLL. 
 
- */
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,10 +43,9 @@
 
 //----------TODO----------------//
 //replace python script with c script to parse polynomial input
-
+//allow for non-monic polynomials
 //It seems like calling factorize_full many times leads to segfaults sometimes. This is likely due to memory not being cleared somewhere. Need to find where the buildup is. UPDATE: rand memory leak detection with valgrind and fixed a few malloc bugs. This didn't fix the issue, however. 
 //continue messing with valgrind. Suspect possible bug in GMP?
-
 //multi-thread the starting root. Execute same alg for different roots so that roots of low degree are more likely to be found first.
 
 
@@ -64,6 +63,7 @@ int main(int argc,char *argv[]){
 }
 
 // factor polynomial from command line input (argv,argc)
+// return 0 if failed
 int cli_factor(int argc, char *argv[]) {
     srand(1); //initialize random
     int i,j;
@@ -118,33 +118,11 @@ int cli_factor(int argc, char *argv[]) {
         printf("================================================================================================\n");
         printf("Begin factorization\n");
         printf("================================================================================================\n\n");
-    };
-
-
-    //check that it is monic and divide out by highest power of x dividing it
-    int trivial_power=monic_slide_dont_multiply(poly_len,poly);
-    if(trivial_power<0){
-        printf("Polynomial not monic. Unable to divide.\n");
-        for(i=0;i<poly_len;i++){
-            mpz_clear(poly[i]);
-            for(j=0;j<poly_len-1;j++)
-                mpz_clear(allfactors[j*poly_len+i]);
-        }
-        free(allfactors);
-        free(poly);
-        free(multiplicities);
-
-        return 0;
     }
-    else if(verbosity && trivial_power>0){
-        printf("Trivial factor found:\n");
-        printf("x^%d\n\n",trivial_power);
-    }
-
 
     //factor it
     clock_t start=clock(),diff;
-    factor_counter=factorize_full_improved(poly,poly_len,PRECISION,allfactors,multiplicities,verbosity,delta);	
+    factor_counter=factorize_full(poly,poly_len,PRECISION,allfactors,multiplicities,verbosity,delta);	
     diff=clock()-start;
     int msec_time=diff*1000/CLOCKS_PER_SEC;
 
@@ -156,7 +134,7 @@ int cli_factor(int argc, char *argv[]) {
 
     //print factors
     if(factor_counter>0){printf("Factorization:\n");
-        print_factors(allfactors,multiplicities,factor_counter,poly_len,trivial_power,1);
+        print_factors(allfactors,multiplicities,factor_counter,poly_len,0,1);
         printf("\n");
     }
     else{
