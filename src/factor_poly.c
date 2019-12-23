@@ -60,7 +60,7 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
 
 
 int main(int argc,char *argv[]){
-    return cli_factor(argc,argv);
+    return !cli_factor(argc,argv);
 }
 
 // factor polynomial from command line input (argv,argc)
@@ -68,14 +68,14 @@ int cli_factor(int argc, char *argv[]) {
     srand(1); //initialize random
     int i,j;
     int PRECISION=64; //bits of precision (for floats) - default 64
-    int poly_len; //length of polynomial 
+    int poly_len=0; //length of polynomial 
     int factor_counter; //number of factors 
     int verbosity=0; //verbosity bool
     int timer=0; //timer bool
     double delta=0.3;//LLL parameter default
     mpz_t *poly; //polynomial coefficients
     mpz_t *allfactors; //factors list
-
+    int *multiplicities; //multiplicities of factors
 
     //read command line parameters
     if(parameter_set(argc,argv,&PRECISION,&verbosity,&timer,&delta,&poly_len)==0)
@@ -85,9 +85,10 @@ int cli_factor(int argc, char *argv[]) {
     if(verbosity){printf("Working precision: %d\n",PRECISION);printf("LLL parameter: %lf\n",delta);}
 
 
-    //allocate input polynomial and its list of factors
+    //allocate input polynomial, its list of factors, and their multiplicities
     poly=malloc(poly_len*sizeof(mpz_t));
     allfactors=malloc(poly_len*(poly_len-1)*sizeof(mpz_t));
+    multiplicities=malloc(poly_len*sizeof(int));
     for(i=0;i<poly_len;i++){
         mpz_init(poly[i]);
         mpz_set_ui(poly[i],0);
@@ -106,6 +107,7 @@ int cli_factor(int argc, char *argv[]) {
         }
         free(allfactors);
         free(poly);
+        free(multiplicities);
 
         return 0;
     }
@@ -130,6 +132,7 @@ int cli_factor(int argc, char *argv[]) {
         }
         free(allfactors);
         free(poly);
+        free(multiplicities);
 
         return 0;
     }
@@ -141,7 +144,7 @@ int cli_factor(int argc, char *argv[]) {
 
     //factor it
     clock_t start=clock(),diff;
-    factor_counter=factorize_full(poly,poly_len,PRECISION,allfactors,verbosity,delta);	
+    factor_counter=factorize_full_improved(poly,poly_len,PRECISION,allfactors,multiplicities,verbosity,delta);	
     diff=clock()-start;
     int msec_time=diff*1000/CLOCKS_PER_SEC;
 
@@ -153,7 +156,7 @@ int cli_factor(int argc, char *argv[]) {
 
     //print factors
     if(factor_counter>0){printf("Factorization:\n");
-        print_factors(allfactors,factor_counter,poly_len,trivial_power,1);
+        print_factors(allfactors,multiplicities,factor_counter,poly_len,trivial_power,1);
         printf("\n");
     }
     else{
@@ -165,6 +168,7 @@ int cli_factor(int argc, char *argv[]) {
         }
         free(allfactors);
         free(poly);
+        free(multiplicities);
 
         return 0;
     }
@@ -182,9 +186,8 @@ int cli_factor(int argc, char *argv[]) {
     }
     free(allfactors);
     free(poly);
+    free(multiplicities);
     return 1;
-
-
 }
 
 // credit: jmucchiello, StackOverflow
@@ -392,7 +395,7 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
 
     //no arguments passed
     if(argc==1){
-        printf("Input is a monic polynomial in Z[x], written without spaces (e.g. x^2-x+2)\nFormat: <polynomial> <OPTS>\n        OPTS: -v: verbosity\n              -t: timer\n              -p: precision in bits (e.g. -p 150). Default is 64, minimum of 16.\n              -d: LLL parameter (0.25<d<1). Default is 0.3.\n");
+        printf("Input is a monic polynomial in Z[x], written without spaces (e.g. x^2-x+2)\nFormat: <polynomial> <OPTS>\n        OPTS: -v: verbosity\n              -t: timer\n              -p: precision in bits (e.g. -p 150). Default is 64, minimum of 32.\n              -d: LLL parameter (0.25<d<1). Default is 0.3.\n");
         return 0;
     }
     //get putative polynomial length and set options
@@ -418,7 +421,7 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
                     printf("Precision indicated not a positive integer.\n");
                     return 0;
                 }
-                *PRECISION=MAX(*PRECISION,16); //Assume at least 16 bits of precision
+                *PRECISION=MAX(*PRECISION,32); //Assume at least 32 bits of precision
             }
             else if(strcmp(argv[i],"-d")==0){
                 i++;

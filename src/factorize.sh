@@ -3,7 +3,8 @@
 #passes intput to python script which parses and passes polynomial to c function
 
 argstr="${@:2}"
+rootstr="/Users/David/Documents/Maths/c/algebraic_numbers/git"
 
-../factor_poly $(python ../msc_code/poly_parse.py $1) $argstr
+$rootstr/factor_poly $(python $rootstr/msc_code/poly_parse.py $1) $argstr
 
 

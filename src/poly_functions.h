@@ -9,6 +9,7 @@
 
 //------------TODO------------------//
 //in print_factors(), print repeated factors with power notation
+//allow for non-monic polynomials
 //implement irreducibility tests
 //			- Eisenstein (plus shifts?)
 //      - Perron's criterion
@@ -18,7 +19,7 @@
 
 
 void print_poly(int len,const  mpz_t *x,int newline);
-void print_factors(mpz_t *factors, int num_factors, int poly_len,int trivial_power,int newline);
+void print_factors(mpz_t *factors,int *multiplicities, int num_factors, int poly_len,int trivial_power,int newline);
 void evaluate(mpz_t *p, int len,const mpf_t input, mpf_t output,int PRECISION);
 void evaluate_cx(mpz_t *p, int len, const mpc_t input, mpc_t output, int PRECISION);
 int degree(mpz_t *p, int len);
@@ -32,6 +33,7 @@ int find_factor(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION);
 int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,int verbosity,double d_delta);
 int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity,double delta);
 int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta);
+int factorize_full_improved(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta);
 int monic_slide(int len, mpz_t *p);
 int monic_slide_dont_multiply(int len, mpz_t *p);
 void derivative(mpz_t *p,mpz_t *pp,int poly_len);
@@ -102,7 +104,7 @@ void print_poly(int len,const  mpz_t *x,int newline){
 
 //print list of factors of a polynomial
 //trivial_power is the highest power of x dividing the polynomial
-void print_factors(mpz_t *factors, int num_factors, int poly_len,int trivial_power,int newline){
+void print_factors(mpz_t *factors,int *multiplicities, int num_factors, int poly_len,int trivial_power,int newline){
     int j;
     if(trivial_power==1)
         printf("x");
@@ -115,6 +117,8 @@ void print_factors(mpz_t *factors, int num_factors, int poly_len,int trivial_pow
             printf("(");  
             print_poly(poly_len,&factors[j*poly_len],0);
             printf(")");
+            if(multiplicities[j]>1)
+                printf("^%d",multiplicities[j]);
             if(newline)
                 printf("\n");
         } 
@@ -341,7 +345,6 @@ int polydivide(mpz_t *p,mpz_t *d,mpz_t *out,int len){
     for(i=0;i<len;i++)
         mpz_set(out[i],p[len-i-1]);
 
-
     //offset index in d, (also the max index of loop below)
     deg_d=degree(d,len);
     offset=len-deg_d;
@@ -363,6 +366,7 @@ int polydivide(mpz_t *p,mpz_t *d,mpz_t *out,int len){
         return_val=0;
     else
         return_val=1;
+
 
     //turn out into q (forgetting r): [reverse(q),reverse(r)] -> [q,0]
     for(i=len-deg_d;i<len;i++)
@@ -918,8 +922,8 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int ver
 
     derivative(p,pp,poly_len);
     gcd(p,pp,gcd_p,poly_len);
-
-    while(degree(gcd_p,poly_len)>1){//while there are repeated factors
+    
+    while(degree(gcd_p,poly_len)>0){//while there are repeated factors
         derivative(p,pp,poly_len);
         gcd(p,pp,gcd_p,poly_len);		
         if(polydivide(p,gcd_p,stripped,poly_len)!=0){//strip off pice with no repeated factors 
@@ -997,9 +1001,123 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int ver
     return total_factors;
 }
 
+//same as above, but improved algorithm
+//finds the largest degree, square free factor. Factors that and then find the multiplicities of those factors
+int factorize_full_improved(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta){
+    int i,j,mult,new_factors=0;
+
+    //if it is degree 1 or less: we are done
+    if(degree(poly,poly_len)<=1){
+        for(i=0;i<poly_len;i++)
+            mpz_set(factors[i],poly[i]);
+        return 1;
+    }
+
+    mpz_t *p=malloc(poly_len*sizeof(mpz_t));
+    mpz_t *pp=malloc(poly_len*sizeof(mpz_t));
+    mpz_t *gcd_p=malloc(poly_len*sizeof(mpz_t));
+    mpz_t *stripped=malloc(poly_len*sizeof(mpz_t));
+
+    for(i=0;i<poly_len;i++){
+        mpz_init(p[i]);
+        mpz_init(pp[i]);
+        mpz_init(stripped[i]);
+        mpz_init(gcd_p[i]);
+        mpz_set(p[i],poly[i]);
+    }
+
+    derivative(p,pp,poly_len);
+    gcd(p,pp,gcd_p,poly_len);
+
+    if(degree(gcd_p,poly_len)>0){//if higher multiplicity factors exist (p is not square-free)
+        if(polydivide(p,gcd_p,stripped,poly_len)!=0){//strip off pice with no repeated factors 
+            printf("gcd wasn't a divisor!\n");
+            for(i=0;i<poly_len;i++){
+                mpz_clear(p[i]);
+                mpz_clear(pp[i]);
+                mpz_clear(gcd_p[i]);
+                mpz_clear(stripped[i]);
+            }
+            free(p);
+            free(pp);
+            free(gcd_p);
+            free(stripped);
+
+            return 0;
+        }
+        if(verbosity)
+            printf("Higher multiplicity factors detected.\n\n");
+
+        //set p to square-free part of p
+        for(i=0;i<poly_len;i++)
+            mpz_set(p[i],stripped[i]);
+    }
+
+    if(degree(p,poly_len)>0){//factor square-free part
+        new_factors=factorize(p,poly_len,PRECISION,&factors[0],verbosity,delta);
+        if(new_factors==0){
+            for(i=0;i<poly_len;i++){
+                mpz_clear(p[i]);
+                mpz_clear(pp[i]);
+                mpz_clear(gcd_p[i]);
+                mpz_clear(stripped[i]);
+            }
+            free(p);
+            free(pp);
+            free(gcd_p);
+            free(stripped);
+
+            return 0;
+        }
+    }
+
+    //ensure multiplicities are all zero to start
+    for(i=0;i<poly_len;i++)
+        *(multiplicities+i)=0;
+
+
+    //compute multiplicites of each factor
+    for(j=0;j<new_factors;j++){
+        //set p back to original polynomial
+        for(i=0;i<poly_len;i++)
+            mpz_set(p[i],poly[i]);
+        mult=0;
+
+        //set pp to be the jth factor
+        for(i=0;i<poly_len;i++)
+            mpz_set(pp[i],factors[j*poly_len+i]);
+
+        //divide by pp until you can't
+        while(polydivide(p,pp,stripped,poly_len)==0){
+            mult++;
+            for(i=0;i<poly_len;i++)
+                mpz_set(p[i],stripped[i]);
+
+        }
+        multiplicities[j]=mult;
+    }
+
+    //clear variables
+    for(i=0;i<poly_len;i++){
+        mpz_clear(p[i]);
+        mpz_clear(pp[i]);
+        mpz_clear(gcd_p[i]);
+        mpz_clear(stripped[i]);
+    }
+    free(p);
+    free(pp);
+    free(gcd_p);
+    free(stripped);
+
+    return new_factors;
+}
+
+
+
 //make sure p is monic and divide out by highest power of x dividing p
 //if the leading coefficient is -1, multiply through by -1 and proceed
 //return highest power of x dividing p, -1 if not monic
+//TODO: if multiplied by -1 through, need to give a -1 coefficient to one of the factors later on (maybe just remove that part?)
 int monic_slide(int len, mpz_t *p){
     int first_nz=0;
     int last_nz=len-1;
