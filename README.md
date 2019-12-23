@@ -26,17 +26,13 @@ The following is a good unit test for development. It consists of factoring a la
 ```
 ./factorize.sh x^18+3x^17+6x^16+2x^15+5x^14+9x^13-5x^12-3x^10-17x^9-3x^7-16x^6+5x^5+9x^4-5x^3+3x^2+6x
 
-Polynomial input:
-6x^1 + 3x^2 - 5x^3 + 9x^4 + 5x^5 - 16x^6 - 3x^7 - 17x^9 - 3x^10 - 5x^12 + 9x^13 + 5x^14 + 2x^15 + 6x^16 + 3x^17 + x^18
+Polynomial input: 6x + 3x^2 - 5x^3 + 9x^4 + 5x^5 - 16x^6 - 3x^7 - 17x^9 - 3x^10 - 5x^12 + 9x^13 + 5x^14 + 2x^15 + 6x^16 + 3x^17 + x^18
 Factorization:
-x
-(-1 - x^1 + x^3 + x^4 + x^5)
-(1 - x^1 + x^2)
-(1 + x^1)
-(-1 + x^1)
-(6 + 3x^1 + x^2)
-(1 - x^1 + x^2)
-(1 + x^1)
-(1 - x^1 + x^2)
-(1 + x^1)
+
+(-1 - x + x^3 + x^4 + x^5)
+(1 - x + x^2)^3
+(1 + x)^3
+(-1 + x)
+(6 + 3x + x^2)
+(x)
 ```
