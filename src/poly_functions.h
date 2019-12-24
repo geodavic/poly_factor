@@ -815,7 +815,7 @@ int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,i
     if(LLL_found_divisor==0){
         //no divisor found by LLL, clear variables and exit
         if(verbosity){
-            printf("No factor found, increase precision.\n");}
+            printf("No factor found, increase precision or delta parameter.\n");}
         gmp_randclear(seed);
         mpc_clear(input);
         mpc_clear(output);
@@ -879,7 +879,7 @@ int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosit
         mpz_set_ui(q[i],0);
     }
 
-    
+
     while(is_reducible&&degree_q>0){
         //find a factor
         is_reducible=find_factor_cx(poly,d,q,degree_q+1,PRECISION,verbosity,delta);
@@ -946,7 +946,7 @@ int factorize_full_old(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int
 
     derivative(p,pp,poly_len);
     gcd(p,pp,gcd_p,poly_len);
-    
+
     while(degree(gcd_p,poly_len)>0){//while there are repeated factors
         derivative(p,pp,poly_len);
         gcd(p,pp,gcd_p,poly_len);		
@@ -1038,7 +1038,7 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *m
             mpz_set(factors[i],poly[i]);
         return 1;
     }
-    
+
     //allocate auxillary polynomials used
     mpz_t *p=malloc(poly_len*sizeof(mpz_t));
     mpz_t *pp=malloc(poly_len*sizeof(mpz_t));
@@ -1114,7 +1114,7 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *m
     //ensure multiplicities are all zero to start
     for(i=0;i<poly_len;i++)
         multiplicities[i]=0;
-    
+
 
     //compute multiplicites of each factor
     if(gcd_deg>0){

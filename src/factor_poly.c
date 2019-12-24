@@ -3,7 +3,7 @@
    George D. Torres, 2017.
    Polynomial factorization using LLL. 
 
-*/
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +23,6 @@
 //    07.2018
 
 //---------about----------------//
-
 //polynomial facorization algorithm: find root of f(x) using Newton's method -> use LLL to find algebraic relation on root -> get irreducible divisor of f(x) -> repeat on quotient
 //assume f(x) monic for now
 //compile with 'gcc -Wall -Wextra -o factor_poly factor_poly.c -lgmp -lmpfr -lmpc' (or type make)
@@ -34,7 +33,6 @@
 //there is a python script in msc_code that will parse a polynomial into csv format
 
 //----------notes---------------//
-
 //not a guaranteed algorithm, since LLL method won't always find minimal polynomial, but is nearly guaranteed. Higher precision -> higher likelihood of finding a factor
 //LLL is polynomial time, but method requires high precision arithmetic, so it doesn't scale well to higher degree polynomials (see complexity below)
 //compleixity for one factorization is approximately O(n^6*A^3), where n is the degree of the input polynomial and A = n+PRECISION*log(2); for fixed (and reasonable) precision, this is O(n^9).
@@ -72,7 +70,7 @@ int cli_factor(int argc, char *argv[]) {
     int factor_counter; //number of factors 
     int verbosity=0; //verbosity bool
     int timer=0; //timer bool
-    double delta=0.3;//LLL parameter default
+    double delta=0.5;//LLL parameter default
     mpz_t *poly; //polynomial coefficients
     mpz_t *allfactors; //factors list
     int *multiplicities; //multiplicities of factors
@@ -373,7 +371,7 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
 
     //no arguments passed
     if(argc==1){
-        printf("Input is a monic polynomial in Z[x], written without spaces (e.g. x^2-x+2)\nFormat: <polynomial> <OPTS>\n        OPTS: -v: verbosity\n              -t: timer\n              -p: precision in bits (e.g. -p 150). Default is 64, minimum of 32.\n              -d: LLL parameter (0.25<d<1). Default is 0.3.\n");
+        printf("Input is a monic polynomial in Z[x], written without spaces (e.g. x^2-x+2)\nFormat: <polynomial> <OPTS>\n        OPTS: -v: verbosity\n              -t: timer\n              -p: precision in bits (e.g. -p 150). Default is 64, minimum of 32.\n              -d: LLL parameter (0.25<d<1). Default is 0.5.\n");
         return 0;
     }
     //get putative polynomial length and set options
@@ -419,26 +417,11 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
 
             }
             else{
-                printf("Input error. Unrecognized options.\n");
+                printf("Input error. Unrecognized options (ensure polynomial input has no spaces).\n");
                 return 0;
             }
         }
     }
     return 1;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
