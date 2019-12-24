@@ -10,7 +10,7 @@ bin/factor_poly -1,0,0,0,1
 ```
 will factor the polynomial x^4-1. The second is a algebraic number checker. Execute the binary and follow the inputs. It will take as input a base 10 decimal number and output a feasible minimal polynomial for that number. 
 
-There is also a shell script version of ```factor_poly``` located in ```src``` that can be used in the terminal for easier input of the polynomial, e.g.:
+There is also a shell script version of ```factor_poly``` located in the root directory that can be used in the terminal for easier input of the polynomial, e.g.:
 ```
 ./factorize.sh x^4-1
 ```
