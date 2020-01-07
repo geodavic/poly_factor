@@ -53,7 +53,7 @@ int read_poly(char *polystr,mpz_t *poly,int poly_len);
 int read_degree(char *polystr);
 int read_csv(char *polystr,mpz_t *poly,int poly_len);
 int csv_len(char *str);
-int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *timer,double *delta,int *poly_len);
+int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *timer,int *newline,double *delta,int *poly_len);
 
 
 int main(int argc,char *argv[]){
@@ -69,6 +69,7 @@ int cli_factor(int argc, char *argv[]) {
     int poly_len=0; //length of polynomial 
     int factor_counter; //number of factors 
     int verbosity=0; //verbosity bool
+    int newline=0; //newline bool (for printing)
     int timer=0; //timer bool
     double delta=0.5;//LLL parameter default
     mpz_t *poly; //polynomial coefficients
@@ -76,7 +77,7 @@ int cli_factor(int argc, char *argv[]) {
     int *multiplicities; //multiplicities of factors
 
     //read command line parameters
-    if(parameter_set(argc,argv,&PRECISION,&verbosity,&timer,&delta,&poly_len)==0)
+    if(parameter_set(argc,argv,&PRECISION,&verbosity,&timer,&newline,&delta,&poly_len)==0)
         return 0;
 
     //print parameters
@@ -132,7 +133,7 @@ int cli_factor(int argc, char *argv[]) {
 
     //print factors
     if(factor_counter>0){printf("Factorization:\n");
-        print_factors(allfactors,multiplicities,factor_counter,poly_len,0,0);
+        print_factors(allfactors,multiplicities,factor_counter,poly_len,0,newline);
         printf("\n");
     }
     else{
@@ -366,7 +367,7 @@ int csv_len(char *str){
 
 
 //parse command line input and set the relevant parameters
-int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *timer,double *delta,int *poly_len){
+int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *timer,int *newline,double *delta,int *poly_len){
     int i;
 
     //no arguments passed
@@ -386,6 +387,8 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
                 *verbosity=1;
                 *timer=1;
             }
+            else if(strcmp(argv[i],"-newline")==0)
+                *newline=1;
             else if(strcmp(argv[i],"-p")==0){
                 i++;
                 if(i==argc){

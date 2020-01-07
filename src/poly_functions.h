@@ -292,8 +292,8 @@ int rootfind_cx(mpz_t *p, int len, mpc_t start,mpc_t root,int log10_thresh, int 
     mpc_t quot; mpc_init2(quot,PRECISION);
     mpc_t dummy; mpc_init2(dummy,PRECISION);
     mpfr_t thresh; mpfr_init2(thresh,PRECISION);
-    mpz_t *pp; pp=malloc((len)*sizeof(mpz_t));
-    mpz_t *ppp; ppp=malloc((len)*sizeof(mpz_t));
+    mpz_t *pp; pp=malloc((len)*sizeof(mpz_t)); //valgrind sees an issue here
+    mpz_t *ppp; ppp=malloc((len)*sizeof(mpz_t)); //or here
     mpc_t eval_p; mpc_init2(eval_p,PRECISION);
     mpc_t eval_pp; mpc_init2(eval_pp,PRECISION);
     mpc_t eval_ppp; mpc_init2(eval_ppp,PRECISION);
