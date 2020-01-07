@@ -36,3 +36,7 @@ Factorization:
 (6 + 3x + x^2)
 (x)
 ```
+
+## TODO
+
+Optimize using ```pthreads``` and generalize to non-monic factorization. 
