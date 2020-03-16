@@ -1086,7 +1086,7 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *m
             return 0;
         }
         if(verbosity)
-            printf("Higher multiplicity factors detected.\n\n");
+            printf("**Higher multiplicity factors detected.**\n\n");
 
         //set p to square-free part of p
         for(i=0;i<poly_len;i++)
