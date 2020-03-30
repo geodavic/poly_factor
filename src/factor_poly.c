@@ -110,8 +110,10 @@ int cli_factor(int argc, char *argv[]) {
 
         return 0;
     }
-    printf("Polynomial input: ");
-    print_poly(poly_len,poly,1);
+    if(verbosity){
+        printf("Polynomial input: ");
+        print_poly(poly_len,poly,1);
+    }
     if(verbosity){
         printf("\n");
         printf("================================================================================================\n");
@@ -132,7 +134,8 @@ int cli_factor(int argc, char *argv[]) {
     }
 
     //print factors
-    if(factor_counter>0){printf("Factorization:\n");
+    if(factor_counter>0){
+        if(verbosity){printf("Factorization:\n");}
         print_factors(allfactors,multiplicities,factor_counter,poly_len,0,newline);
         printf("\n");
     }
@@ -372,7 +375,7 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
 
     //no arguments passed
     if(argc==1){
-        printf("Input is a monic polynomial in Z[x], written without spaces (e.g. x^2-x+2)\nFormat: <polynomial> <OPTS>\n        OPTS: -v: verbosity\n              -t: timer\n              -p: precision in bits (e.g. -p 150). Default is 64, minimum of 32.\n              -d: LLL parameter (0.25<d<1). Default is 0.5.\n              -newline: print each factor on a new line.\n              -d");
+        printf("Input is a monic polynomial in Z[x], written without spaces (e.g. x^2-x+2)\nFormat: <polynomial> <OPTS>\n        OPTS: -v: verbosity\n              -t: timer\n              -p: precision in bits (e.g. -p 150). Default is 64, minimum of 32.\n              -d: LLL parameter (0.25<d<1). Default is 0.5.\n              -newline: print each factor on a new line.\n");
         return 0;
     }
     //get putative polynomial length and set options
