@@ -1,0 +1,13 @@
+Pre-optimization profile. Let Phi_n(x) be the nth cyclotomic polynomial.
+Below is the factorization time for various n.
+
+------------------
+| n  | time (ms) |
++----+-----------+
+| 11 | 159       |
+| 13 | 386       |
+| 17 | 1604      |
+| 23 | 7882      |
+| 29 | 29695     |
+| 31 | 41290     |
+------------------
