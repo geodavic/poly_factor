@@ -1,6 +1,6 @@
 # Polynomial factorization using LLL
 
-This is a repository implementing the LLL lattice reduction algorithm and using it for monic, integer polynomial factorization. 
+This is a repository implementing the LLL lattice reduction algorithm and using it for monic, integer polynomial factorization. Given such a polynomial p, the algorithm works roughly like this: use a quickly converging root finding method (e.g. cubic Newton's method) to find a root p(a) = 0, where a is possibly complex. Then try to find the minimal polynomial p_a of a, which must be an irreducible factor of p. This is done by finding an integer relation on the powers of a using the lattice basis reduction algorithm due to Lenstra, Lenstra, and Lovaz (LLL). Divide p by p_a and repeat this process on the quotient q = p/p_a. Eventually the process will stop when q = 1. 
 
 ## Use
 
