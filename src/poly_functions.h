@@ -31,7 +31,7 @@ int find_factor(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION);
 int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,int verbosity,double d_delta);
 int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity,double delta);
 int factorize_full_old(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta);
-int factorize_ful(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta);
+int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta);
 int monic_slide(int len, mpz_t *p);
 int monic_slide_dont_multiply(int len, mpz_t *p);
 void derivative(mpz_t *p,mpz_t *pp,int poly_len);
