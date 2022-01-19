@@ -4,6 +4,6 @@
 
 argstr="${@:2}"
 
-./bin/factor_poly $(python ./msc_code/poly_parse.py $1) $argstr
+./bin/factor_poly $(python3 ./utils/poly_parse.py $1) $argstr
 
 
