@@ -46,10 +46,19 @@ Factorization:
 (x)
 ```
 
+## API
+
+There is now an API hosted on Google Cloud which you can use to factor polynomials using your favorite requests engine. For example, with cURL:
+```
+curl -d '{"poly":"x^4+x^2+1"}' -H "Content-Type: application/json" -X POST "https://poly-factor-s4ph7avbaq-uc.a.run.app/factor"
+```
+
 ## Dockerfile
 
 There is a Dockerfile included that can be used to compile the code should you not have the libraries. Simply build the image and exec into it, and the binaries will be built and ready to use.
 
 ## TODO
 
-Optimize using ```pthreads``` and generalize to non-monic factorization.
+1) Document API and add appropriate response cases.
+2) Optimize using ```pthreads``` and generalize to non-monic factorization.
+
