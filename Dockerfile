@@ -16,12 +16,14 @@ COPY . /app/
 
 WORKDIR /app
 
-# api requirements
-RUN python3 -m pip install -r ./api/requirements.txt
+# api requirement
+RUN python3 -m pip install flask
 
 # build the binaries
 RUN make build
 
 EXPOSE 5000
 
-CMD ["python3","api/api.py"]
+ARG PORT=5000
+
+CMD ["python3","api.py"]

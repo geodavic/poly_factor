@@ -50,11 +50,14 @@ def parse_poly(polystr):
 
 	return rstring
 
-argc=len(sys.argv)
-if argc>2:
-	print("e e e") #three arguments, meant to throw error in c program this feeds
-elif argc<2:
-	print("") #no arguments
-else:
-	polystr=sys.argv[1]
-	print(parse_poly(polystr))
+
+if __name__=="__main__":
+
+    argc=len(sys.argv)
+    if argc>2:
+        print("e e e") #three arguments, meant to throw error in c program this feeds
+    elif argc<2:
+        print("") #no arguments
+    else:
+        polystr=sys.argv[1]
+        print(parse_poly(polystr))
