@@ -48,4 +48,4 @@ Factorization:
 
 ## TODO
 
-Optimize using ```pthreads``` and generalize to non-monic factorization. 
+Optimize using ```pthreads``` and generalize to non-monic factorization.
