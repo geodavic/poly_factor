@@ -52,9 +52,9 @@ def parse_poly(polystr):
 
 argc=len(sys.argv)
 if argc>2:
-	print "e e e" #three arguments, meant to throw error in c program this feeds
+	print("e e e") #three arguments, meant to throw error in c program this feeds
 elif argc<2:
-	print "" #no arguments
+	print("") #no arguments
 else:
 	polystr=sys.argv[1]
-	print parse_poly(polystr)
+	print(parse_poly(polystr))

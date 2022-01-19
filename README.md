@@ -29,7 +29,7 @@ This will have the same output as ```bin/factor_poly -1,0,0,0,1```.
 
 Compiling requires the libraries ```gmp 5.+```, ```mpfr 1.1+```, and ```mpc 3.+```. 
 
-## Unit test
+## Unit tests
 
 The following is a good unit test for development. It consists of factoring a large degree polynomial that has repeated factors.
 ```
@@ -45,6 +45,10 @@ Factorization:
 (6 + 3x + x^2)
 (x)
 ```
+
+## Dockerfile
+
+There is a Dockerfile included that can be used to compile the code should you not have the libraries. Simply build the image and exec into it, and the binaries will be built and ready to use.
 
 ## TODO
 
