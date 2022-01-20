@@ -286,6 +286,14 @@ int rootfind(mpz_t *p, int len, mpf_t start,mpf_t root,int log10_thresh, int PRE
 //    : make sure p has no repeated roots (otherwise this isn't guaranteed to converge)
 //TODO: make exit condition depend on abs(Re(x)) and abs(Im(x))
 int rootfind_cx(mpz_t *p, int len, mpc_t start,mpc_t root,int log10_thresh, int PRECISION){
+
+    // If p is linear, the root is already known: -p[0]
+    if(len<=2){
+        mpc_set_z(root,p[0],MPC_RNDNN);
+        mpc_ui_sub(root,0,root,MPC_RNDNN); //root = -root
+        return 1;
+    }
+
     int i;
     int max_iterates=100;
     mpfr_t diff; mpfr_init2(diff,PRECISION);
