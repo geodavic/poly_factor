@@ -65,7 +65,7 @@ int main(int argc,char *argv[]){
 int cli_factor(int argc, char *argv[]) {
     srand(1); //initialize random
     int i,j;
-    int PRECISION=64; //bits of precision (for floats) - default 64
+    int PRECISION=128; //bits of precision (for floats) - default 64
     int poly_len=0; //length of polynomial 
     int factor_counter; //number of factors 
     int verbosity=0; //verbosity bool
