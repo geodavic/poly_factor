@@ -36,6 +36,12 @@ def factor():
     print(["./bin/factor_poly",binput]+opts,flush=True)
     proc = subprocess.Popen(["./bin/factor_poly",binput]+opts,stdout=subprocess.PIPE)
     out = proc.communicate()[0]
+    exit_code = proc.wait()
+
+    # Catch exit code for any C-level errors
+    if exit_code == 1:
+        raise werkzeug.exceptions.InternalServerError(out)
+
     return out
 
 
