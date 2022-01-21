@@ -51,7 +51,7 @@ def parse_poly(polystr,enforce_monic=True):
     for c in coefs:
         rstring+='%d,'%c
     
-    if abs(coefs[-1]) != 1:
+    if coefs[-1] != 1:
         raise ValueError("Polynomial not monic, unable to divide.")
 
     return rstring
