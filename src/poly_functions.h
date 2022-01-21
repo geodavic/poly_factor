@@ -766,8 +766,10 @@ int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,i
         //check that d is a divisor
         if(polydivide(poly,d,q,poly_len)==0){
             if(verbosity){
-                printf("\nFactor:\n");
-                print_poly(poly_len,d,1);
+                printf("\nFactor found:\n");
+                printf("--> ");
+                print_poly(poly_len,d,0);
+                printf(" <--\n");
                 printf("Quotient:\n");
                 print_poly(poly_len,q,1);
                 printf("\n");}
@@ -797,7 +799,7 @@ int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,i
 
     for(deg=2;deg<=input_degree;deg++){//loop on degrees
         if(verbosity){
-            printf("      LLL on degree %d\n",deg);}
+            printf("      LLL searching for factor of degree %d...",deg);}
         sig_digits=sig_mpc(output,deg,PRECISION);
         //find irreducible polynomial for chosen root
         create_basis_cx(basis,output,deg,sig_digits,PRECISION);
@@ -812,11 +814,16 @@ int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,i
         if((monic_slide(deg+1,d)>=0)&&(polydivide(poly,d,q,poly_len)==0)){
             LLL_found_divisor=1;
             if(verbosity){
-                printf("Factor:\n");
-                print_poly(poly_len,d,1);
+                printf("\nFactor found:\n");
+                printf("--> ");
+                print_poly(poly_len,d,0);
+                printf(" <--\n");
                 printf("Quotient:\n");
                 print_poly(poly_len,q,1);}
             break; //quit once you've found lowest degree divisor
+        }
+        if(verbosity){
+            printf(" none\n");
         }
     }
 

@@ -1,6 +1,7 @@
 import sys
+import re
 
-def parse_poly(polystr):
+def parse_poly(polystr,enforce_monic=True):
     """
     parse polynomial into csv format
     e.g. x^4-1  ->  -1,0,0,1
@@ -49,28 +50,61 @@ def parse_poly(polystr):
     rstring=''
     for c in coefs:
         rstring+='%d,'%c
+    
+    if abs(coefs[-1]) != 1:
+        raise ValueError("Polynomial not monic, unable to divide.")
 
     return rstring
 
-def parse_opts(opts_list,allowed_opts):
+def parse_opts(opts,allowed_opts,defaults):
     """ Parse options from api request
     """
-    if opts_list is None:
+    
+    if not opts:
         return []
 
+    rval = []
+    for k,v in opts.items():
+        assert k in allowed_opts.keys(), f"Unrecognized option: {k}"
+        rval.append(allowed_opts[k])
+        if not v:
+            vc = defaults[k]
+        else:
+            vc = type(defaults[k])(v)
+        rval.append(str(vc))
 
-    for i in range(len(opts_list)):
-        opt = opts_list[i]
-        if opt[0] != "-":
-            opts_list[i] = "-" + opt
-        o1 = opt.split(" ")[0].replace("-","")
-        assert o1 in allowed_opts,f"Unrecognized option: {opt}"
-
-    
-    rval = " ".join(opts_list)
-    rval = rval.split(" ")
     return rval
 
+def parse_output(out):
+    """ Parse the verbose output of factor_poly.
+    Keys in return: factors (list), time (float), verbosity output (str)
+    """
+    answers = out.split("Factorization:")[-1].split("\n")
+    answers = [s for s in answers if s]
+
+    time = answers[-1].split(":")[-1].strip()
+    factors = answers[:-1]
+
+    rval = {"time":time,"factors":factors,"verbose":out}
+    return rval
+
+def parse_output_html(out,verbose="on"):
+    """ Parse the verbose output of factor_poly to an html string.
+    """
+    font_family = "Courier New"
+
+    if verbose == "on":
+        body = out.replace("\n","<br>")
+        body = re.sub(r"={10,}<br>","<hr>",body)
+        body = body.replace("Factorization:","<b>Factorization:")
+        body += "</b>"
+        body = body.replace("-->","<b>&gt;&gt;&nbsp;")
+        body = body.replace("<--","&nbsp; &lt;&lt;</b>")
+    else:
+        body = "".join(parse_output(out)["factors"])
+
+    rval = '<html><p style="font-family: {font_family}">' + body + "</p></html>"
+    return rval
 
 if __name__=="__main__":
 
