@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>poly factor</title>
+    <link
+      rel="stylesheet"
+      href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"
+    >
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script>
+      function resizeIframe(obj) {
+        obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 'px';
+      }
+    </script>
+</head>
+  <body>
+    <div class="col-sm-6 col-sm-offset-3">
+      <h2>Polynomial Factorization using LLL</h2>
+
+      <form method="post" action="http://localhost:5000/factor" target="output">
+        <div id="poly-group" class="form-group">
+          <label for="poly">Polynomial</label>
+          <input
+            type="text"
+            class="form-control"
+            id="poly"
+            name="poly"
+            placeholder="e.g. x^10-1"
+          />
+        </div>
+
+
+        <br>
+        <h5 style="text-align:center"> <i>Algorithm parameters. Higher is better, but slower, for both.</i> </h5>
+
+        <div class="form-row">
+            <div id="precision-group" class="form-group col-md-6">
+              <label for="precision">Precision (optional)</label>
+              <input
+                type="text"
+                class="form-control"
+                id="precision"
+                name="precision"
+                placeholder="Bits of precision (default 64)"
+              />
+            </div>
+
+            <div id="superhero-group" class="form-group col-md-6">
+              <label for="delta">LLL Parameter (optional)</label>
+              <input
+                type="text"
+                class="form-control"
+                id="delta"
+                name="delta"
+                placeholder="Delta parameter (must be in [0.25,1), default is 0.5)"
+              />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <input class="form-check-input" type="checkbox" id="verbose" name="verbose">
+            <label class="form-check-label" for="verbose"> Verbose output </label>
+        </div>
+
+        <button type="submit" class="btn btn-success">
+          Factor
+        </button>
+      </form>
+
+      <br>
+      <iframe src="" name="output" frameborder="0" style="height:2000px; width:100%;"/>
+    </div>
+
+  </body>
+</html>
+ 
+
