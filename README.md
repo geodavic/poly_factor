@@ -6,7 +6,9 @@ The higher the degree of the polynomial, the higher the precision needed; hence 
 
 ## Use
 
-Use the included makefile to get two binaries: ```factor_poly``` and ```mpz_algebraic```. In other words:
+Use this [page](https://web.ma.utexas.edu/users/gdavtor/poly_factor.html) to try it out. 
+
+If you prefer the command line, clone this repo and use the included makefile to get two binaries: ```factor_poly``` and ```mpz_algebraic```. In other words:
 ```
 make all //compile both files and run unit tests
 ```
