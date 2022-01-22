@@ -1,12 +1,14 @@
 import sys
 import re
 
+ERROR_STR = "Polynomial parse error: must be in the variable 'x' with nonnegative exponents and in expanded form"
+
 def parse_poly(polystr,enforce_monic=True):
     """
     parse polynomial into csv format
     e.g. x^4-1  ->  -1,0,0,1
     """
-    polystr = polystr.replace(" ","")
+    polystr = polystr.replace(" ","").lower()
     L=polystr.replace("-","+-").split("+")
     degree=0
     #regularize terms
@@ -25,9 +27,9 @@ def parse_poly(polystr,enforce_monic=True):
         try:
             if("^" in term):
                 d=int(term.split('^')[-1])
-        except ValueError:
+        except ValueError as e:
             if len(term)>0:
-                return "error"
+                raise Exception(ERROR_STR)
             else:
                 continue
         if d>degree:
@@ -45,7 +47,7 @@ def parse_poly(polystr,enforce_monic=True):
                 try:
                     c=int(term.split('*')[0])
                 except ValueError:
-                    return "error"
+                    raise Exception(ERROR_STR)
                 coefs[d]+=c
     rstring=''
     for c in coefs:
