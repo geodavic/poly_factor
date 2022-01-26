@@ -63,7 +63,8 @@ def factor():
 
     # Catch exit code for any C-level errors
     if exit_code == 1:
-        raise werkzeug.exceptions.InternalServerError(out)
+        out = parse_output_html(out.decode("utf-8"),verbose="on",error=True)
+        return out
 
     # format output
     if got_form:

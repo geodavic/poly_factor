@@ -90,7 +90,7 @@ def parse_output(out):
     rval = {"time":time,"factors":factors,"verbose":out}
     return rval
 
-def parse_output_html(out,verbose="on"):
+def parse_output_html(out,verbose="on",error=False):
     """ Parse the verbose output of factor_poly to an html string.
     """
     font_family = "Courier New"
@@ -98,14 +98,19 @@ def parse_output_html(out,verbose="on"):
     if verbose == "on":
         body = out.replace("\n","<br>")
         body = re.sub(r"={10,}<br>","<hr>",body)
-        body = body.replace("Factorization:","<b>Factorization:")
-        body += "</b>"
+        if "Factorization:" in body:
+            body = body.replace("Factorization:","<b>Factorization:")
+            body += "</b>"
         body = body.replace("-->","<b>&gt;&gt;&nbsp;")
         body = body.replace("<--","&nbsp; &lt;&lt;</b>")
     else:
         body = "".join(parse_output(out)["factors"])
 
-    rval = '<html><p style="font-family: {font_family}">' + body + "</p></html>"
+    error_str = ""
+    if error:
+        error_str = "<h2> Factorization failed: </h2>"
+
+    rval = f'<html style="font-family: {font_family}; font-size:12">'+ error_str + body + "</html>"
     return rval
 
 if __name__=="__main__":
