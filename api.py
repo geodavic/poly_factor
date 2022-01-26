@@ -6,6 +6,7 @@ import json
 import subprocess
 
 MAX_DEG = 300
+LLL_CAP = 20
 ALLOWED_OPTS = {"delta":"-d","precision":"-p"}
 OPTS_DEFAULTS = {"delta":0.5,"precision":64}
 
@@ -54,7 +55,7 @@ def factor():
         raise werkzeug.exceptions.RequestEntityTooLarge
 
     # Execute
-    command = ["./bin/factor_poly",binput]+opts+["-t","-v","-newline"]
+    command = ["./bin/factor_poly",binput]+opts+["-t","-v","-newline","-stop",LLL_CAP]
     print(command,flush=True)
     proc = subprocess.Popen(command,stdout=subprocess.PIPE)
     out = proc.communicate()[0]
