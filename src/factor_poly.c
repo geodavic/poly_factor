@@ -53,7 +53,7 @@ int read_poly(char *polystr,mpz_t *poly,int poly_len);
 int read_degree(char *polystr);
 int read_csv(char *polystr,mpz_t *poly,int poly_len);
 int csv_len(char *str);
-int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *timer,int *newline,double *delta,int *poly_len);
+int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *timer,int *newline,double *delta,int *poly_len, int *stop_deg);
 
 
 int main(int argc,char *argv[]){
@@ -71,14 +71,16 @@ int cli_factor(int argc, char *argv[]) {
     int verbosity=0; //verbosity bool
     int newline=0; //newline bool (for printing)
     int timer=0; //timer bool
+    int stop_deg=0;// stop degree for LLL
     double delta=0.5;//LLL parameter default
     mpz_t *poly; //polynomial coefficients
     mpz_t *allfactors; //factors list
     int *multiplicities; //multiplicities of factors
 
     //read command line parameters
-    if(parameter_set(argc,argv,&PRECISION,&verbosity,&timer,&newline,&delta,&poly_len)==0)
+    if(parameter_set(argc,argv,&PRECISION,&verbosity,&timer,&newline,&delta,&poly_len,&stop_deg)==0)
         return 0;
+    if(stop_deg==0){stop_deg=poly_len;}
 
     //print parameters
     if(verbosity){printf("Working precision: %d\n",PRECISION);printf("LLL parameter: %lf\n",delta);}
@@ -123,7 +125,7 @@ int cli_factor(int argc, char *argv[]) {
 
     //factor it
     clock_t start=clock(),diff;
-    factor_counter=factorize_full(poly,poly_len,PRECISION,allfactors,multiplicities,verbosity,delta);	
+    factor_counter=factorize_full(poly,poly_len,PRECISION,allfactors,multiplicities,verbosity,delta,stop_deg);	
     diff=clock()-start;
     int msec_time=diff*1000/CLOCKS_PER_SEC;
 
@@ -370,12 +372,12 @@ int csv_len(char *str){
 
 
 //parse command line input and set the relevant parameters
-int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *timer,int *newline,double *delta,int *poly_len){
+int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *timer,int *newline,double *delta,int *poly_len, int* stop_deg){
     int i;
 
     //no arguments passed
     if(argc==1){
-        printf("Input is a monic polynomial in Z[x], written without spaces (e.g. x^2-x+2)\nFormat: <polynomial> <OPTS>\n        OPTS: -v: verbosity\n              -t: timer\n              -p: precision in bits (e.g. -p 150). Default is 64, minimum of 32.\n              -d: LLL parameter (0.25<d<1). Default is 0.5.\n              -newline: print each factor on a new line.\n");
+        printf("Input is a monic polynomial in Z[x], written without spaces (e.g. x^2-x+2)\nFormat: <polynomial> <OPTS>\n        OPTS: -v: verbosity\n              -t: timer\n              -p: precision in bits (e.g. -p 150). Default is 64, minimum of 32.\n              -d: LLL parameter (0.25<d<1). Default is 0.5.\n              -newline: print each factor on a new line.\n              -stop: Stop degree for LLL algorithm. Default is infinity.\n");
         return 0;
     }
     //get putative polynomial length and set options
@@ -421,6 +423,14 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
                     return 0;
                 }
 
+            }
+            else if(strcmp(argv[i],"-stop")==0){
+                i++;
+                if(i==argc){
+                    printf("Stop parameter not recognized.\n"); 
+                    return 0;
+                }
+                *stop_deg=strtol(argv[i],&argv[i],10);
             }
             else{
                 printf("Input error. Unrecognized options (ensure polynomial input has no spaces).\n");

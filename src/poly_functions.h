@@ -28,10 +28,9 @@ int polydivide(mpz_t *p,mpz_t *d,mpz_t *out,int len);
 int polydivide_r(mpq_t *p,mpq_t *d,mpq_t *r,int len);
 void gcd(mpz_t *poly1, mpz_t *poly2, mpz_t *gcd, int poly_len);
 int find_factor(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION);
-int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,int verbosity,double d_delta);
-int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity,double delta);
-int factorize_full_old(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta);
-int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta);
+int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,int verbosity, double d_delta, int stop_deg);
+int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta, int stop_deg);
+int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta, int stop_deg);
 int monic_slide(int len, mpz_t *p);
 int monic_slide_dont_multiply(int len, mpz_t *p);
 void derivative(mpz_t *p,mpz_t *pp,int poly_len);
@@ -683,10 +682,11 @@ int find_factor(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION){
 
 //same as above, but allows for complex roots (more general, maybe requires /slightly/ more precision)
 //notes: - might be able to reduce down to at most one dummy variable of each data type
-int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,int verbosity, double d_delta){
+int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,int verbosity, double d_delta, int stop_deg){
     int i,j,iter=0,iter_max=3;
     int sig_digits,deg,input_degree=poly_len-1;
     int LLL_found_divisor=0;
+    int LLL_hit_cap=0;
     int log10thresh=(int)(PRECISION*log10(2.0)); //closest we can get to root with given PRECISION
     gmp_randstate_t seed; gmp_randinit_default(seed);//seed for random starting value of rootfind
     mpc_t input; mpc_init2(input,PRECISION);
@@ -798,6 +798,13 @@ int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,i
         mpz_init(basis[i]);
 
     for(deg=2;deg<=input_degree;deg++){//loop on degrees
+
+        // break if cap hit
+        if(deg==stop_deg){
+            LLL_hit_cap=1;
+            break; 
+        }
+
         if(verbosity){
             printf("      LLL searching for factor of degree %d...",deg);}
         sig_digits=sig_mpc(output,deg,PRECISION);
@@ -827,10 +834,17 @@ int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,i
         }
     }
 
-    if(LLL_found_divisor==0){
+    if(!LLL_found_divisor||LLL_hit_cap){
         //no divisor found by LLL, clear variables and exit
         if(verbosity){
-            printf("No factor found, increase precision or delta parameter.\n");}
+            if(LLL_hit_cap){
+                printf("Maximum degree %d hit, LLL has become too inefficient.\n",stop_deg);
+            }
+            else{
+                printf("No factor found, increase precision or delta parameter.\n");
+            }
+        }
+
         gmp_randclear(seed);
         mpc_clear(input);
         mpc_clear(output);
@@ -870,7 +884,7 @@ int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,i
 //not guaranteed to work if poly has factors of higher multiplicity (due 
 //to Halley's method rounding). Consequently, one should pass poly/gcd(poly,poly')
 //and keep track of the gcd separately
-int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta){
+int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta, int stop_deg){
     int i;
     int is_reducible=1;
     int factor_counter=0;
@@ -897,7 +911,7 @@ int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosit
 
     while(is_reducible&&degree_q>0){
         //find a factor
-        is_reducible=find_factor_cx(poly,d,q,degree_q+1,PRECISION,verbosity,delta);
+        is_reducible=find_factor_cx(poly,d,q,degree_q+1,PRECISION,verbosity,delta,stop_deg);
         degree_q=degree(q,poly_len);
         //copy factor d to factor bank
         if(is_reducible){
@@ -931,120 +945,14 @@ int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosit
     return factor_counter;
 }
 
+
 //factorizes poly even if it has repeated factors 
 //essentially calls factorize() on poly/gcd(poly,poly') and gcd(poly,poly')
 //iteratively, to mitigate factoring polynomials with repeated factors
-//this version does not have the multiplicities list
-int factorize_full_old(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta){
-    //idea: strip off poly/gcd, call factorize(poly/gcd), set poly <- gcd. Repeat while gcd!=1
-    int i,new_factors,total_factors=0,exp_count=0;
-
-    //if it is degree 1 or less: we are done
-    if(degree(poly,poly_len)<=1){
-        for(i=0;i<poly_len;i++)
-            mpz_set(factors[i],poly[i]);
-        return 1;
-    }
-
-    mpz_t *p=malloc(poly_len*sizeof(mpz_t));
-    mpz_t *pp=malloc(poly_len*sizeof(mpz_t));
-    mpz_t *gcd_p=malloc(poly_len*sizeof(mpz_t));
-    mpz_t *stripped=malloc(poly_len*sizeof(mpz_t));
-
-    for(i=0;i<poly_len;i++){
-        mpz_init(p[i]);
-        mpz_init(pp[i]);
-        mpz_init(stripped[i]);
-        mpz_init(gcd_p[i]);
-        mpz_set(p[i],poly[i]);
-    }
-
-    derivative(p,pp,poly_len);
-    gcd(p,pp,gcd_p,poly_len);
-
-    while(degree(gcd_p,poly_len)>0){//while there are repeated factors
-        derivative(p,pp,poly_len);
-        gcd(p,pp,gcd_p,poly_len);		
-        if(polydivide(p,gcd_p,stripped,poly_len)!=0){//strip off pice with no repeated factors 
-            printf("gcd wasn't a divisor!\n");
-            for(i=0;i<poly_len;i++){
-                mpz_clear(p[i]);
-                mpz_clear(pp[i]);
-                mpz_clear(gcd_p[i]);
-                mpz_clear(stripped[i]);
-            }
-            free(p);
-            free(pp);
-            free(gcd_p);
-            free(stripped);
-
-            return 0;
-        }
-        exp_count++;
-        if(verbosity){
-            printf("Factoring exponent-free part #%d\n",exp_count);
-            printf("-----------------------------------------------------------------------------\n\n");
-        }
-
-        new_factors=factorize(stripped,poly_len,PRECISION,&factors[total_factors*poly_len],verbosity,delta);
-        if(new_factors==0){
-            for(i=0;i<poly_len;i++){
-                mpz_clear(p[i]);
-                mpz_clear(pp[i]);
-                mpz_clear(gcd_p[i]);
-                mpz_clear(stripped[i]);
-            }
-            free(p);
-            free(pp);
-            free(gcd_p);
-            free(stripped);
-
-            return 0;
-        }
-        total_factors=total_factors+new_factors;
-        for(i=0;i<poly_len;i++) //set p <- gcd and repeat
-            mpz_set(p[i],gcd_p[i]);
-    }
-
-    if(degree(p,poly_len)>0){//factor remaining part
-        new_factors=factorize(p,poly_len,PRECISION,&factors[total_factors*poly_len],verbosity,delta);
-        if(new_factors==0){
-            for(i=0;i<poly_len;i++){
-                mpz_clear(p[i]);
-                mpz_clear(pp[i]);
-                mpz_clear(gcd_p[i]);
-                mpz_clear(stripped[i]);
-            }
-            free(p);
-            free(pp);
-            free(gcd_p);
-            free(stripped);
-
-            return 0;
-        }
-        total_factors=total_factors+new_factors;
-    }
-
-    //clear variables
-    for(i=0;i<poly_len;i++){
-        mpz_clear(p[i]);
-        mpz_clear(pp[i]);
-        mpz_clear(gcd_p[i]);
-        mpz_clear(stripped[i]);
-    }
-    free(p);
-    free(pp);
-    free(gcd_p);
-    free(stripped);
-
-    return total_factors;
-}
-
-//same as above, but improved algorithm
 //If p = f_1^{n_1} * ... * f_k^{n_k}, then this first finds f_1,...,f_k then n_1,...,n_k
 //the f_i are stored in factors and the n_i are stored in multiplicities
 //finds the largest degree, square free factor. Factors that and then find the multiplicities of those factors
-int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta){
+int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta, int stop_deg){
     int i,j,mult,new_factors=0;
 
     //if it is degree 1 or less: we are done
@@ -1109,7 +1017,7 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *m
     }
 
     if(degree(p,poly_len)>0){//factor square-free part
-        new_factors=factorize(p,poly_len,PRECISION,&factors[0],verbosity,delta);
+        new_factors=factorize(p,poly_len,PRECISION,&factors[0],verbosity,delta,stop_deg);
         if(new_factors==0){
             for(i=0;i<poly_len;i++){
                 mpz_clear(p[i]);

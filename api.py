@@ -5,7 +5,7 @@ import os
 import json
 import subprocess
 
-MAX_DEG = 20
+MAX_DEG = 300
 ALLOWED_OPTS = {"delta":"-d","precision":"-p"}
 OPTS_DEFAULTS = {"delta":0.5,"precision":64}
 
