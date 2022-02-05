@@ -77,7 +77,7 @@ def parse_opts(opts,allowed_opts,defaults):
 
     return rval
 
-def parse_output(out):
+def parse_output(out,verbose="on"):
     """ Parse the verbose output of factor_poly.
     Keys in return: factors (list), time (float), verbosity output (str)
     """
@@ -87,7 +87,9 @@ def parse_output(out):
     time = answers[-1].split(":")[-1].strip()
     factors = answers[:-1]
 
-    rval = {"time":time,"factors":factors,"verbose":out}
+    rval = {"time":time,"factors":factors}
+    if verbose == "on":
+        rval['verbose'] = out
     return rval
 
 def parse_output_html(out,verbose="on",error=False):
