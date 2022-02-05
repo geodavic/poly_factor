@@ -70,7 +70,7 @@ def factor():
     if got_form:
         out = parse_output_html(out.decode("utf-8"),verbose=verbose)
     else:
-        out = parse_output(out.decode("utf-8"))
+        out = parse_output(out.decode("utf-8"),verbose=verbose)
 
     return out
 
