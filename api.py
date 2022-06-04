@@ -14,6 +14,7 @@ app = Flask(__name__)
 
 # TODO : waiting page in iframe
 #        OPTIONS method
+#        use FastAPI
 
 @app.after_request
 def after_request(response):

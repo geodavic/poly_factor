@@ -329,30 +329,21 @@ int read_degree(char *polystr){
 //return zero if failed, nonzero value if succeeded. 
 int read_csv(char *polystr,mpz_t *poly,int poly_len){
     char *p=polystr;
-    int is_neg=1; //keep track of negative 
     int current_deg=0;
-    signed long coef;
-    while(*p){
-        if(!strncmp(p,",",1))
-            p++;
-        else if(!strncmp(p,"-",1)){
-            is_neg=-1;
-            p++;
+
+    // split on commas
+    char *token = strtok(p,",");
+    while( token != NULL ){
+        if(current_deg>=poly_len){
+            printf("Error: polynomial not allocated enough memory\n");
+            return 0;
         }
-        else if(isdigit(*p)){
-            coef=strtol(p,&p,10);
-            if(current_deg>=poly_len){
-                printf("Error: polynomial not allocated enough memory\n");
-                return 0;
-            }
-            else{
-                mpz_set_si(poly[current_deg],is_neg*coef);
-                is_neg=1;
-                current_deg++;
-            }
-        }
-        else
-            return 0; //not a number or sign or comma (improper format)
+        if(mpz_set_str(poly[current_deg],token,10)){
+            printf("Invalid integer coefficient: %s\n",token);
+            return 0;
+        };
+        token = strtok(NULL,",");
+        current_deg++;
     }
     return 1;	
 }
