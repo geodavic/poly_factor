@@ -12,6 +12,7 @@ app = FastAPI(
 
 tags_metadata = [{"name": "factor", "description": "Factor a monic integer polynomial"}]
 
+# TODO: make html factor endpoint
 
 @app.post(
     "/factor",
