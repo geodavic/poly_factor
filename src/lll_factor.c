@@ -12,7 +12,7 @@
 #include <ctype.h>
 #include <regex.h>
 #include "lll_gs.h" //includes gmp.h, mpfr.h, mpc.h, math.h
-#include "poly_functions.h" //function library for polynomials
+#include "lll_functions.h" //function library for polynomials
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
@@ -24,13 +24,6 @@
 
 //---------about----------------//
 //polynomial facorization algorithm: find root of f(x) using Newton's method -> use LLL to find algebraic relation on root -> get irreducible divisor of f(x) -> repeat on quotient
-//assume f(x) monic for now
-//compile with 'gcc -Wall -Wextra -o factor_poly factor_poly.c -lgmp -lmpfr -lmpc' (or type make)
-//this is the command line input version
-//syntax: ./factor_poly <polynomial in csv> <-v for verbose mode> <-t for time display>
-//      csv polynomial example: x^2 - x + 3 is encoded as 3,-1,1
-//		if both verbosity and time are required, can use -vt or -tv
-//there is a python script in msc_code that will parse a polynomial into csv format
 
 //----------notes---------------//
 //not a guaranteed algorithm, since LLL method won't always find minimal polynomial, but is nearly guaranteed. Higher precision -> higher likelihood of finding a factor
@@ -39,30 +32,19 @@
 //there is a trade-off between the parameters PRECISION and delta (the LLL parameter). Lower values of delta make LLL run faster, but be less accurate. Raising PRECISION a certain amount will fix this, but at the cost of slower computations. Raising delta makes LLL slower but allows for lower PRECISION, hence faster gmp computations. Not sure where the sweet spot is yet.
 
 
-//----------TODO----------------//
-//replace python script with c script to parse polynomial input
-//allow for non-monic polynomials
-//It seems like calling factorize_full many times leads to segfaults sometimes. This is likely due to memory not being cleared somewhere. Need to find where the buildup is. UPDATE: rand memory leak detection with valgrind and fixed a few malloc bugs. This didn't fix the issue, however. 
-//continue messing with valgrind. Suspect possible bug in GMP?
-//multi-thread the starting root. Execute same alg for different roots so that roots of low degree are more likely to be found first.
-
-
-int cli_factor(int argc, char *argv[]);
-char *str_replace(char *orig, char *rep, char *with);
-int read_poly(char *polystr,mpz_t *poly,int poly_len);
-int read_degree(char *polystr);
+int lll_factor(int argc, char *argv[]);
 int read_csv(char *polystr,mpz_t *poly,int poly_len);
 int csv_len(char *str);
 int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *timer,int *newline,double *delta,int *poly_len, int *stop_deg);
 
 
 int main(int argc,char *argv[]){
-    return !cli_factor(argc,argv);
+    return !lll_factor(argc,argv);
 }
 
 // factor polynomial from command line input (argv,argc)
 // return 0 if failed
-int cli_factor(int argc, char *argv[]) {
+int lll_factor(int argc, char *argv[]) {
     srand(1); //initialize random
     int i,j;
     int PRECISION=128; //bits of precision (for floats) - default 64
@@ -100,7 +82,7 @@ int cli_factor(int argc, char *argv[]) {
 
     //read polynomial and print it
     if(!read_csv(argv[1],poly,poly_len)){
-        printf("Input error. Expect <polynomial in csv> <-v for verbosity>\n");
+        fprintf(stderr,"Input error. Expect <polynomial in csv> <-v for verbosity>\n");
         for(i=0;i<poly_len;i++){
             mpz_clear(poly[i]);
             for(j=0;j<poly_len-1;j++)
@@ -142,7 +124,7 @@ int cli_factor(int argc, char *argv[]) {
         printf("\n");
     }
     else{
-        printf("Factorization failed\n");
+        fprintf(stderr,"Factorization failed\n");
         for(i=0;i<poly_len;i++){
             mpz_clear(poly[i]);
             for(j=0;j<poly_len-1;j++)
@@ -172,158 +154,6 @@ int cli_factor(int argc, char *argv[]) {
     return 1;
 }
 
-// credit: jmucchiello, StackOverflow
-char *str_replace(char *orig, char *rep, char *with) {
-    char *result; // the return string
-    char *ins;    // the next insert point
-    char *tmp;    // varies
-    int len_rep;  // length of rep (the string to remove)
-    int len_with; // length of with (the string to replace rep with)
-    int len_front; // distance between rep and end of last rep
-    int count;    // number of replacements
-
-    // sanity checks and initialization
-    if (!orig || !rep)
-        return NULL;
-    len_rep = strlen(rep);
-    if (len_rep == 0)
-        return NULL; // empty rep causes infinite loop during count
-    if (!with)
-        with = "";
-    len_with = strlen(with);
-
-    // count the number of replacements needed
-    ins = orig;
-    for (count = 0; (tmp = strstr(ins, rep)); ++count) {
-        ins = tmp + len_rep;
-    }
-
-    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
-
-    if (!result)
-        return NULL;
-
-    // first time through the loop, all the variable are set correctly
-    // from here on,
-    //    tmp points to the end of the result string
-    //    ins points to the next occurrence of rep in orig
-    //    orig points to the remainder of orig after "end of rep"
-    while (count--) {
-        ins = strstr(orig, rep);
-        len_front = ins - orig;
-        tmp = strncpy(tmp, orig, len_front) + len_front;
-        tmp = strcpy(tmp, with) + len_with;
-        orig += len_front + len_rep; // move to next "end of rep"
-    }
-    strcpy(tmp, orig);
-    return result;
-}
-
-
-
-
-
-//read polynomial from polystr; return length (=degree+1), length 0 if failed
-//can only process coefficients of type long for now
-//input format requires that the coefficients be two characters before the power of x (e.g. 10x^2)
-//made poorly, not working
-//int read_poly(char *polystr,char *csvstr,int poly_len){
-int read_poly(char *polystr,mpz_t *poly,int poly_len){
-    char *p=polystr;
-    int deg=0;
-    int is_neg;
-    int max_deg=0;
-
-    //polystr=replace_char(polystr)
-
-    signed long coef;
-    while(*p){
-        if(!strncmp(p,"-",1))
-            is_neg=-1;
-        if(isdigit(*p)){
-            coef=strtol(p,&p,10);
-            if(isdigit(*(p+2))&&!strncmp(p+1,"^",1)){//terms of degree 2 or more
-                p=p+2;
-                deg=strtol(p,&p,10); //degree is two characters after coefficient
-                if(deg>max_deg)
-                    max_deg=deg;
-                if(deg<poly_len){
-                    mpz_set_si(poly[deg],is_neg*coef);
-                    is_neg=1;
-                }
-                else{
-                    printf("Error: polynomial not allocated enough memory\n");
-                    return 0;
-                }
-            }
-            else if(!strncmp(p," ",1)||!strncmp(p,"+",1)||!strncmp(p,"-",1)||!strncmp(p,"\0",1)){//constant term
-                mpz_set_si(poly[0],is_neg*coef);
-                is_neg=1;
-            }
-            else if(!strncmp(p,"x",1)&&(!strncmp(p+1," ",1)||!strncmp(p+1,"+",1)||!strncmp(p+1,"-",1)||!strncmp(p+1,"\0",1))){//degree 1 term
-                p++;
-                mpz_set_si(poly[1],is_neg*coef);
-                is_neg=1;
-            }
-            else
-                return 0; //improper format
-
-        }//next come coefficient \pm 1 terms
-        else if(!strncmp(p,"x",1)&&(!strncmp(p+1," ",1)||!strncmp(p+1,"+",1)||!strncmp(p+1,"-",1)||!strncmp(p+1,"\0",1))){//degree 1 term
-            mpz_set_si(poly[1],is_neg);
-            is_neg=1;
-            p++;
-        }
-        else if(!strncmp(p,"x",1)&&(!strncmp(p+1,"^",1))){//degree 2 or more terms
-            if(isdigit(*(p+2))){
-                p=p+2;
-                deg=strtol(p,&p,10);
-                if(deg>max_deg)
-                    max_deg=deg;
-                if(deg<poly_len){
-                    mpz_set_si(poly[deg],is_neg*coef);
-                    is_neg=1;
-                }
-                else{
-                    printf("Error: polynomial not allocated enough memory\n");
-                    return 0;
-                }
-            }
-            else
-                return 0;//improper format
-        }
-        else
-            p++;
-    }
-    return max_deg+1;
-}
-
-//read degree of polynomial string, return 0 if failed
-int read_degree(char *polystr){
-    char *p=polystr;
-    int max_deg=0;
-    int deg;
-    while(*p){
-        if(!strncmp(p,"^",1)){
-            if(isdigit(*(p+1))){
-                p++;
-                deg=strtol(p,&p,10);
-                if(deg>max_deg)
-                    max_deg=deg;
-            }
-            else
-                return 0;
-        }
-        else if(!strncmp(p,"x",1)){
-            if(1>max_deg)
-                max_deg=1;
-            p++;
-        }
-        else
-            p++;
-    }
-    return max_deg;
-}
 
 //read csv to polynomial
 //return zero if failed, nonzero value if succeeded. 
@@ -335,11 +165,11 @@ int read_csv(char *polystr,mpz_t *poly,int poly_len){
     char *token = strtok(p,",");
     while( token != NULL ){
         if(current_deg>=poly_len){
-            printf("Error: polynomial not allocated enough memory\n");
+            fprintf(stderr,"Error: polynomial not allocated enough memory\n");
             return 0;
         }
         if(mpz_set_str(poly[current_deg],token,10)){
-            printf("Invalid integer coefficient: %s\n",token);
+            fprintf(stderr,"Invalid integer coefficient: %s\n",token);
             return 0;
         };
         token = strtok(NULL,",");
@@ -359,8 +189,6 @@ int csv_len(char *str){
     }
     return len;
 }
-
-
 
 //parse command line input and set the relevant parameters
 int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *timer,int *newline,double *delta,int *poly_len, int* stop_deg){
@@ -388,12 +216,12 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
             else if(strcmp(argv[i],"-p")==0){
                 i++;
                 if(i==argc){
-                    printf("Precision indicated not an integer.\n");
+                    fprintf(stderr,"Precision indicated not an integer.\n");
                     return 0;
                 }
                 *PRECISION=strtol(argv[i],&argv[i],10);
                 if(*PRECISION<=0){
-                    printf("Precision indicated not a positive integer.\n");
+                    fprintf(stderr,"Precision indicated not a positive integer.\n");
                     return 0;
                 }
                 *PRECISION=MAX(*PRECISION,32); //Assume at least 32 bits of precision
@@ -401,16 +229,16 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
             else if(strcmp(argv[i],"-d")==0){
                 i++;
                 if(i==argc){
-                    printf("Delta parameter indicated not recognized.\n");
+                    fprintf(stderr,"Delta parameter indicated not recognized.\n");
                     return 0;
                 }
                 *delta=strtod(argv[i],&argv[i]);
                 if(*delta==0.0){
-                    printf("Delta parameter indicated not a double.\n");
+                    fprintf(stderr,"Delta parameter indicated not a double.\n");
                     return 0;
                 }
                 if(*delta<=0.25||*delta>=1){
-                    printf("Delta parameter must be in the range 0.25 < d < 1\n");
+                    fprintf(stderr,"Delta parameter must be in the range 0.25 < d < 1\n");
                     return 0;
                 }
 
@@ -418,13 +246,13 @@ int parameter_set(int argc, char *argv[],int *PRECISION, int *verbosity,int *tim
             else if(strcmp(argv[i],"-stop")==0){
                 i++;
                 if(i==argc){
-                    printf("Stop parameter not recognized.\n"); 
+                    fprintf(stderr,"Stop parameter not recognized.\n"); 
                     return 0;
                 }
                 *stop_deg=strtol(argv[i],&argv[i],10);
             }
             else{
-                printf("Input error. Unrecognized options (ensure polynomial input has no spaces).\n");
+                fprintf(stderr,"Input error. Unrecognized options (ensure polynomial input has no spaces).\n");
                 return 0;
             }
         }

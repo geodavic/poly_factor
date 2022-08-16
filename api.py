@@ -56,7 +56,7 @@ def factor():
         raise werkzeug.exceptions.RequestEntityTooLarge
 
     # Execute
-    command = ["./bin/factor_poly",binput]+opts+["-t","-v","-newline","-stop",str(LLL_CAP)]
+    command = ["./bin/lll_factor",binput]+opts+["-t","-v","-newline","-stop",str(LLL_CAP)]
     print(command,flush=True)
     proc = subprocess.Popen(command,stdout=subprocess.PIPE)
     out = proc.communicate()[0]

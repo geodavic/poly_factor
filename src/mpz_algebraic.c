@@ -4,7 +4,7 @@
 #include <time.h>
 #include <string.h>
 #include "lll_gs.h" //homemade libraries
-#include "poly_functions.h" //for polynomial print
+#include "lll_functions.h" //for polynomial print
 
 //GDT 12.2017
 //---------about-----------------//

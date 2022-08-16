@@ -1,16 +1,36 @@
 import sys
 import re
+import numpy as np
 
-ERROR_STR = "Polynomial parse error: must be in the variable 'x' with nonnegative exponents and in expanded form"
 
-def parse_poly(polystr,enforce_monic=True):
+class PolynomialConstraintError(Exception):
+    def __init__(self,degree):
+        self.degree = degree
+        if degree == np.infty:
+            self.message = f"Polynomial must be monic."
+        else:
+            self.message = f"Polynomial degree must not exceed {degree} and must be monic."
+        super().__init__(self.message)
+
+
+class PolynomialFormatError(Exception):
+    def __init__(self):
+        self.message = "Polynomial have integer coefficients, must be in the variable 'x' with nonnegative integer exponents, and be in standard form."
+        super().__init__(self.message)
+
+
+
+def parse_poly(polystr,max_deg=None):
     """
     parse polynomial into csv format
     e.g. x^4-1  ->  -1,0,0,1
     """
+    if max_deg is None:
+        max_deg = np.infty
     polystr = polystr.replace(" ","").lower()
     L=polystr.replace("-","+-").split("+")
     degree=0
+
     #regularize terms
     for i in range(len(L)):
         term=L[i]
@@ -29,7 +49,7 @@ def parse_poly(polystr,enforce_monic=True):
                 d=int(term.split('^')[-1])
         except ValueError as e:
             if len(term)>0:
-                raise Exception(ERROR_STR)
+                raise PolynomialFormatError()
             else:
                 continue
         if d>degree:
@@ -47,39 +67,20 @@ def parse_poly(polystr,enforce_monic=True):
                 try:
                     c=int(term.split('*')[0])
                 except ValueError:
-                    raise Exception(ERROR_STR)
+                    raise PolynomialFormatError() 
                 coefs[d]+=c
-    rstring=''
-    for c in coefs:
-        rstring+='%d,'%c
-    
-    if coefs[-1] != 1:
-        raise ValueError("Polynomial not monic, unable to divide.")
+            else:
+                raise PolynomialFormatError()
 
+    if coefs[-1] != 1 or degree > max_deg:
+        raise PolynomialConstraintError(max_deg)
+    
+    rstring = ",".join(map(str,coefs))
     return rstring
 
-def parse_opts(opts,allowed_opts,defaults):
-    """ Parse options from api request
-    """
-    
-    if not opts:
-        return []
-
-    rval = []
-    for k,v in opts.items():
-        assert k in allowed_opts.keys(), f"Unrecognized option: {k}"
-        rval.append(allowed_opts[k])
-        if not v:
-            vc = defaults[k]
-        else:
-            vc = type(defaults[k])(v)
-        rval.append(str(vc))
-
-    return rval
-
-def parse_output(out,verbose="on"):
-    """ Parse the verbose output of factor_poly.
-    Keys in return: factors (list), time (float), verbosity output (str)
+def parse_output(out):
+    """ Parse the verbose output of lll_factor.
+    Keys in return: factors (list), time (float)
     """
     answers = out.split("Factorization:")[-1].split("\n")
     answers = [s for s in answers if s]
@@ -88,12 +89,10 @@ def parse_output(out,verbose="on"):
     factors = answers[:-1]
 
     rval = {"time":time,"factors":factors}
-    if verbose == "on":
-        rval['verbose'] = out
     return rval
 
 def parse_output_html(out,verbose="on",error=False):
-    """ Parse the verbose output of factor_poly to an html string.
+    """ Parse the verbose output of lll_factor to an html string.
     """
     font_family = "Courier New"
 
