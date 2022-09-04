@@ -19,14 +19,8 @@ def parse_output_html(out, verbose='on', failed=False):
     """Parse the verbose output of lll_factor to an html string."""
     font_family = "Courier New"
 
-    if verbose == 'on':
-        body = out.replace("\n", "<br>")
-        body = re.sub(r"={10,}<br>", "<hr>", body)
-        if "Factorization:" in body:
-            body = body.replace("Factorization:", "<b>Factorization:")
-            body += "</b>"
-        body = body.replace("-->", "<b>&gt;&gt;&nbsp;")
-        body = body.replace("<--", "&nbsp; &lt;&lt;</b>")
+    if verbose == 'on' or failed:
+        body = std_to_html(out)
     else:
         body = "".join(parse_output(out)["factors"])
 
@@ -41,3 +35,15 @@ def parse_output_html(out, verbose='on', failed=False):
         + "</html>"
     )
     return rval
+
+def std_to_html(out):
+    """ Convert stdin(out) to html """
+
+    body = out.replace("\n", "<br>")
+    body = re.sub(r"={10,}<br>", "<hr>", body)
+    if "Factorization:" in body:
+        body = body.replace("Factorization:", "<b>Factorization:")
+        body += "</b>"
+    body = body.replace("-->", "<b>&gt;&gt;&nbsp;")
+    body = body.replace("<--", "&nbsp; &lt;&lt;</b>")
+    return body
