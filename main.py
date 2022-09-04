@@ -1,7 +1,7 @@
+from pydantic import ValidationError
 from fastapi import FastAPI, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse
-from model import FactorRequest, FactorResponse, LLLFormData
-from opts_model import OptsType
+from model import FactorRequest, FactorResponse, OptsType, LLLOptions
 from utils.std_parse import parse_output, parse_output_html
 import uvicorn
 import subprocess
@@ -43,7 +43,8 @@ def base_factor(poly: str, opts: OptsType):
 
     # Catch C-level errors
     if exit_code == 1:
-        raise HTTPException(status_code=500, detail=stderr.decode("utf-8"))
+        detail = stdout.decode("utf-8")+"\n"+stderr.decode("utf-8")
+        raise HTTPException(status_code=500, detail=detail)
 
     return stdout.decode("utf-8")
 
@@ -55,7 +56,7 @@ def base_factor(poly: str, opts: OptsType):
         200: {"model": FactorResponse},
     },
 )
-def factor(request: FactorRequest):
+async def factor(request: FactorRequest):
     """Factor a polynomial and return result as json response."""
 
     out = base_factor(request.poly, request.opts)
@@ -64,18 +65,29 @@ def factor(request: FactorRequest):
 
 
 @app.post("/lll_form_data_factor", tags=["web"])
-def lll_form_data_factor(request: LLLFormData = Depends(LLLFormData.as_form)):
+async def lll_form_data_factor(
+    poly: str = Form(...),
+    precision: str = Form(None),
+    delta: str = Form(None),
+    verbose: str = Form(None),
+):
     """Factor a polynomial using LLL and return result as an html string."""
 
     failed = False
+    opts_kw = {"precision": precision, "delta": delta}
+    opts_kw = {k: v for k, v in opts_kw.items() if v is not None}
     try:
-        opts = request.opts
-        out = base_factor(request.poly, opts)
-    except HTTPException as e:
+        opts = LLLOptions(**opts_kw)
+        rq = FactorRequest(poly=poly, opts=opts)
+        out = base_factor(rq.poly, rq.opts)
+    except ValidationError as e:
         failed = True
         out = str(e)
+    except HTTPException as e:
+        failed = True
+        out = e.detail
 
-    html = parse_output_html(out, verbose=request.verbose, failed=failed)
+    html = parse_output_html(out, verbose=verbose, failed=failed)
     return HTMLResponse(content=html, status_code=200)
 
 
