@@ -26,4 +26,4 @@ EXPOSE 5000
 
 ARG PORT=5000
 
-CMD ["python3","api.py"]
+CMD ["python3","main.py"]
