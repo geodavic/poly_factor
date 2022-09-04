@@ -17,7 +17,7 @@ COPY . /app/
 WORKDIR /app
 
 # api requirement
-RUN python3 -m pip install flask
+RUN python3 -m pip install fastapi uvicorn numpy python-multipart
 
 # build the binaries
 RUN make build
