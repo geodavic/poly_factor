@@ -1,5 +1,5 @@
 //Function library for all polynomial factorization files (these files must also include lll_gs.h, which this references extensively)
-//see factor_poly.c for more detailed documentation
+//see lll_factor.c for more detailed documentation
 
 //----major changes------------//
 //GDT 01.2018
@@ -18,16 +18,13 @@
 
 void print_poly(int len,const  mpz_t *x,int newline);
 void print_factors(mpz_t *factors,int *multiplicities, int num_factors, int poly_len,int trivial_power,int newline);
-void evaluate(mpz_t *p, int len,const mpf_t input, mpf_t output,int PRECISION);
 void evaluate_cx(mpz_t *p, int len, const mpc_t input, mpc_t output, int PRECISION);
 int degree(mpz_t *p, int len);
 int degree_q(mpq_t *p, int len);
-int rootfind(mpz_t *p, int len, mpf_t start,mpf_t root,int log10_thresh, int PRECISION);
 int rootfind_cx(mpz_t *p, int len, mpc_t start,mpc_t root,int log10_thresh, int PRECISION);
 int polydivide(mpz_t *p,mpz_t *d,mpz_t *out,int len);
 int polydivide_r(mpq_t *p,mpq_t *d,mpq_t *r,int len);
 void gcd(mpz_t *poly1, mpz_t *poly2, mpz_t *gcd, int poly_len);
-int find_factor(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION);
 int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,int verbosity, double d_delta, int stop_deg);
 int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosity, double delta, int stop_deg);
 int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *multiplicities,int verbosity, double delta, int stop_deg);
@@ -148,23 +145,6 @@ void print_factors(mpz_t *factors,int *multiplicities, int num_factors, int poly
     }
 }
 
-//evaluate p(x) at input using Horner's method
-void evaluate(mpz_t *p, int len,const mpf_t input, mpf_t output, int PRECISION){
-    mpf_t bi; mpf_init2(bi,PRECISION);
-    mpf_t dummy; mpf_init2(dummy,PRECISION);
-    int i;	
-    mpf_set_z(bi,p[len-1]); //bi=an 
-    for(i=len-2;i>=0;i--){ 
-        //set bi=ai+a(i+1)*input
-        mpf_mul(bi,bi,input); 
-        mpf_set_z(dummy,p[i]);
-        mpf_add(bi,dummy,bi);
-    }
-    mpf_set(output,bi); //f(input) = b0
-    mpf_clear(bi);
-    mpf_clear(dummy);
-}
-
 //evaluate p(x), where the input is a complex number. Also Horner's method
 void evaluate_cx(mpz_t *p, int len, const mpc_t input, mpc_t output, int PRECISION){
     mpc_t bi; mpc_init2(bi,PRECISION);
@@ -200,87 +180,10 @@ int degree_q(mpq_t *p, int len){
     return i;
 }
 
-//find one real root of p(x) using second order Newton's method (Halley's method). 
+
+//find one complex root of p(x) using second order Newton's method (Halley's method). 
 //cubic convergence, stop when log10(|xn-x(n+1)|)<-log10_thresh 
 //returns 1 on success and 0 on failure (i.e. exceeding a certain amount of iterations without getting within the threshold of zero).
-int rootfind(mpz_t *p, int len, mpf_t start,mpf_t root,int log10_thresh, int PRECISION){
-    int i;
-    int max_iterates=50; //maximum number of iterations allowed. 50 is generous
-    mpf_t diff; mpf_init2(diff,PRECISION);
-    mpf_t quot; mpf_init2(quot,PRECISION);
-    mpf_t dummy; mpf_init2(dummy,PRECISION);
-    mpf_t thresh; mpf_init2(thresh,PRECISION);
-    mpz_t *pp; pp=malloc((len)*sizeof(mpz_t)); //p'(x)
-    mpz_t *ppp; ppp=malloc((len)*sizeof(mpz_t)); //p''(x)
-    mpf_t eval_p; mpf_init2(eval_p,PRECISION);
-    mpf_t eval_pp; mpf_init2(eval_pp,PRECISION);
-    mpf_t eval_ppp; mpf_init2(eval_ppp,PRECISION);
-
-    //threshold for stopping
-    mpf_set_ui(thresh,10);
-    mpf_pow_ui(thresh,thresh,log10_thresh);
-    mpf_ui_div(thresh,1,thresh);
-
-
-    //compute coefficients of p'(x) and p''(x)
-    for(i=0;i<(len);i++){
-        mpz_init(pp[i]); 
-        mpz_init(ppp[i]); 
-    }
-    for(i=0;i<(len-1);i++)
-        mpz_mul_ui(pp[i],p[i+1],i+1);
-    for(i=0;i<(len-2);i++)
-        mpz_mul_ui(ppp[i],pp[i+1],i+1);
-
-    mpf_set_ui(diff,1);
-    mpf_set(root,start);
-    int c=0; //counter for loop
-    //main loop
-    while(mpf_cmp(diff,thresh)>0&&(c<max_iterates)){
-        c++;
-        evaluate(p,len,root,eval_p,PRECISION);//evaluate p(xn)
-        evaluate(pp,len-1,root,eval_pp,PRECISION); //evaluate pp(xn)
-        evaluate(ppp,len-2,root,eval_ppp,PRECISION);//evaluate ppp(xn)
-
-        mpf_set_ui(quot,2);
-        mpf_mul(quot,quot,eval_pp);
-        mpf_mul(quot,quot,eval_pp);
-        mpf_mul(dummy,eval_p,eval_ppp);
-        mpf_sub(quot,quot,dummy); //denominator of halley quotient
-        mpf_set_ui(dummy,2);
-        mpf_mul(dummy,dummy,eval_p);
-        mpf_mul(dummy,dummy,eval_pp); //numerator
-        mpf_div(quot,dummy,quot); //halley quotient
-
-        mpf_abs(diff,quot); //diff = |quot|
-        mpf_sub(root,root,quot); //x(n+1) = xn - quot
-
-        //progress prints
-        //mpf_out_str(stdout,10,0,root);
-        //printf("\n");
-    }
-
-    //clear variables
-    for(i=0;i<(len);i++){
-        mpz_clear(pp[i]);
-        mpz_clear(ppp[i]);
-    }
-    free(pp);
-    free(ppp);
-    mpf_clear(diff);
-    mpf_clear(eval_p);
-    mpf_clear(eval_pp);
-    mpf_clear(eval_ppp);
-    mpf_clear(quot);
-    mpf_clear(dummy);
-    mpf_clear(thresh);
-    if(c==max_iterates) //didn't find root 
-        return 0;
-    else //found root
-        return 1;
-}
-
-//same as above, except for complex numbers
 //note: start value should not be totally real, since this iteration sends reals to reals
 //    : make sure p has no repeated roots (otherwise this isn't guaranteed to converge)
 //TODO: make exit condition depend on abs(Re(x)) and abs(Im(x))
@@ -449,7 +352,7 @@ int polydivide_r(mpq_t *p,mpq_t *d,mpq_t *r,int len){
         //edge case (if d=0)
     }
     if(deg_d==-1){
-        printf("warning! tried to divide by zero polynomial.\n");
+        fprintf(stderr,"warning! tried to divide by zero polynomial.\n");
         for(i=0;i<len;i++)
             mpq_clear(outq[i]);
         free(outq);
@@ -556,131 +459,6 @@ void gcd(mpz_t *poly1, mpz_t *poly2, mpz_t *gcd, int poly_len){
 //find irreducible factor of poly, poly=d*q. Return zero if no factors found, return 1 if factor is found
 //Warning: this sets d,q to zero upon failure.
 //only finds real roots (for a slight speedup if that's all that is needed)- see below for more general version
-//This function is now slightly outdated. See find_factor_cx for most recent parameters and tweaks
-int find_factor(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION){
-    int i,j;
-    int sig_digits,deg,input_degree=poly_len-1;
-    int LLL_found_divisor=0;
-    int log10thresh=(int)(PRECISION*log10(2.0)); //closest we can get to root with given PRECISION
-    mpf_t input; mpf_init2(input,PRECISION);
-    mpf_t output; mpf_init2(output,PRECISION);
-    mpf_t delta; mpf_init2(delta,PRECISION);mpf_set_d(delta,0.75);//LLL parameter
-    mpf_t thresh; mpf_init2(thresh,PRECISION); //10^(-log10thresh)
-    mpf_t dummy; mpf_init2(dummy,PRECISION); //dummy variables
-    mpz_t dummy_z; mpz_init(dummy_z);
-
-    //make sure d,q are zeroed out
-    for(i=0;i<poly_len;i++){
-        mpz_set_ui(d[i],0);
-        mpz_set_ui(q[i],0);
-    }
-
-    printf("Finding a factor of:\n");
-    print_poly(poly_len,poly,1);
-
-    //find a root
-    mpf_set_d(input,3.1415926); //starting value for rootfind
-    if(!rootfind(poly,poly_len,input,output,log10thresh,PRECISION)){
-        printf("No root found\n");
-        //clear variables and exit
-        mpf_clear(input);
-        mpf_clear(output);
-        mpf_clear(delta);
-        mpf_clear(thresh);
-        mpf_clear(dummy);
-        mpz_clear(dummy_z);
-        return 0;
-    }
-
-    printf("root chosen: ");
-    mpf_out_str(stdout,10,15,output);
-
-    //check if its an integer. If it is, we're done
-    mpf_set_ui(thresh,10);
-    mpf_pow_ui(thresh,thresh,log10thresh);
-    mpf_ui_div(thresh,1,thresh); //set value of thresh from log10thresh
-    Mpf_round_f(dummy,output,PRECISION);
-    mpf_sub(dummy,dummy,output); 
-    mpf_abs(dummy,dummy);//dummy = |difference between output and nearest integer|
-    if(mpf_cmp(dummy,thresh)<=0){//integer check
-        printf(" (integer)");
-        Mpf_round(dummy_z,output,PRECISION); //round output to mpz
-        mpz_mul_si(d[0],dummy_z,-1); //set d(x) = x-output, since output is integer
-        mpz_set_si(d[1],1);
-        //check that d is a divisor
-        if(polydivide(poly,d,q,poly_len)==0){
-            printf("Factor:\n");
-            print_poly(poly_len,d,1);
-            printf("Quotient:\n");
-            print_poly(poly_len,q,1);
-            //clear variables
-            mpf_clear(input);
-            mpf_clear(output);
-            mpf_clear(delta);
-            mpf_clear(thresh);
-            mpf_clear(dummy);
-            mpz_clear(dummy_z);
-            return 1;
-        }
-    }
-    printf("\n");
-
-    //otherwise run LLL on each degree less than input degree to find minimal polynomial
-    mpz_t *basis;//initialize basis
-    basis=malloc((input_degree+1)*(input_degree+2)*sizeof(mpz_t));
-    for(i=0;i<(input_degree+1)*(input_degree+2);i++)
-        mpz_init(basis[i]);
-
-    for(deg=2;deg<=input_degree;deg++){//loop on degrees
-        printf("      LLL on degree %d\n",deg);
-        sig_digits=sig_mpf(output,deg,PRECISION);
-        //find irreducible polynomial for chosen root
-        create_basis(basis,output,deg,sig_digits,PRECISION);
-        LLL(deg+2,deg+1,basis,delta,PRECISION);
-        for(j=0;j<deg+1;j++)
-            mpz_set(d[j],basis[j]); //set first vector of reduced basis to divisor d
-
-        //TODO: pick shortest vector instead of first one
-
-        //check if p is monic and perform synthetic division
-        if((monic_slide(deg+1,d)>=0)&&(polydivide(poly,d,q,poly_len)==0)){
-            LLL_found_divisor=1;
-            printf("Factor:\n");
-            print_poly(poly_len,d,1);
-            printf("Quotient:\n");
-            print_poly(poly_len,q,1);
-            break; //quit once you've found lowest degree divisor
-        }
-    }
-
-    if(LLL_found_divisor==0){
-        //no divisor found by LLL, clear variables and exit
-        mpf_clear(input);
-        mpf_clear(output);
-        mpf_clear(delta);
-        mpf_clear(thresh);
-        mpf_clear(dummy);
-        mpz_clear(dummy_z);
-        for(i=0;i<(input_degree+1)*(input_degree+2);i++)
-            mpz_clear(basis[i]);
-        free(basis);
-        return 0;
-    }
-
-    //clear variables
-    mpf_clear(input);
-    mpf_clear(output);
-    mpf_clear(delta);
-    mpf_clear(thresh);
-    mpf_clear(dummy);
-    mpz_clear(dummy_z);
-    for(i=0;i<(input_degree+1)*(input_degree+2);i++)
-        mpz_clear(basis[i]);
-    free(basis);
-    return 1;
-}
-
-//same as above, but allows for complex roots (more general, maybe requires /slightly/ more precision)
 //notes: - might be able to reduce down to at most one dummy variable of each data type
 int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,int verbosity, double d_delta, int stop_deg){
     int i,j,iter=0,iter_max=3;
@@ -722,8 +500,7 @@ int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,i
         iter++;
     }
     if(iter==iter_max){//failed to find a root after 50 tries
-        if(verbosity){
-            printf("Failed to find a root.\n");}
+        fprintf(stderr,"Failed to find a root.\n");
         //clear variables and exit
         gmp_randclear(seed);
         mpc_clear(input);
@@ -836,13 +613,11 @@ int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,i
 
     if(!LLL_found_divisor||LLL_hit_cap){
         //no divisor found by LLL, clear variables and exit
-        if(verbosity){
-            if(LLL_hit_cap){
-                printf("Maximum degree %d hit, LLL has become too inefficient.\n",stop_deg);
-            }
-            else{
-                printf("No factor found, increase precision or delta parameter.\n");
-            }
+        if(LLL_hit_cap){
+            fprintf(stderr,"Maximum allowed degree %d hit.\n",stop_deg);
+        }
+        else{
+            fprintf(stderr,"No factor found, increase precision or delta parameter.\n");
         }
 
         gmp_randclear(seed);
@@ -895,7 +670,7 @@ int factorize(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors,int verbosit
     //check if poly is monic (must be)
     int degree_poly=degree(poly,poly_len);
     if(mpz_cmp_ui(poly[degree_poly],1)!=0){
-        printf("Polynomial not monic, cannot divide\n");
+        fprintf(stderr,"Polynomial not monic, cannot divide\n");
         return 0;
     }
 
@@ -979,7 +754,7 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *m
     //check that it is monic and divide out by highest power of x dividing it
     int trivial_power=monic_slide_dont_multiply(poly_len,p);
     if(trivial_power<0){
-        printf("Polynomial not monic. Unable to divide.\n");
+        fprintf(stderr,"Polynomial not monic. Unable to divide.\n");
         return 0;
     }
     else if(verbosity && trivial_power>0){
@@ -994,7 +769,7 @@ int factorize_full(mpz_t *poly,int poly_len,int PRECISION,mpz_t *factors, int *m
     int gcd_deg=degree(gcd_p,poly_len);
     if(gcd_deg>0){//if higher multiplicity factors exist (p is not square-free)
         if(polydivide(p,gcd_p,stripped,poly_len)!=0){//strip off pice with no repeated factors 
-            printf("gcd wasn't a divisor!\n");
+            fprintf(stderr,"gcd wasn't a divisor!\n");
             for(i=0;i<poly_len;i++){
                 mpz_clear(p[i]);
                 mpz_clear(pp[i]);

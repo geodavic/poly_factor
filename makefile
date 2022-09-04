@@ -6,7 +6,7 @@ algebraic:
 	gcc -Wall -Wextra -o bin/mpz_algebraic src/mpz_algebraic.c -lgmp -lmpfr -lmpc
 
 poly:
-	gcc -Wall -Wextra -o bin/factor_poly src/factor_poly.c -lgmp -lmpfr -lmpc
+	gcc -Wall -Wextra -o bin/lll_factor src/lll_factor.c -lgmp -lmpfr -lmpc
 
 unit1:
 	./factorize.sh `cat test/test_poly.txt` > test/make_output.txt
