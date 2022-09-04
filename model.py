@@ -36,7 +36,6 @@ class LLLFormData(BaseModel,extra=Extra.allow):
         delta: str = Form(None),
         verbose: str = Form(None),
     ):
-        verbose = verbose == "on"
         opts = LLLOptions(precision=precision, delta=delta)
         rq = FactorRequest(poly=poly,opts=opts)
         obj = cls(poly=rq.poly, precision=opts.precision, delta=opts.delta, verbose=verbose, opts=opts)
