@@ -1,16 +1,14 @@
 import sys
 import re
-import numpy as np
 
 
 class PolynomialConstraintError(Exception):
-    def __init__(self, degree):
-        self.degree = degree
-        if degree == np.infty:
+    def __init__(self, max_degree, lc):
+        if lc != 1:
             self.message = f"Polynomial must be monic."
-        else:
+        if max_degree is not None:
             self.message = (
-                f"Polynomial degree must not exceed {degree} and must be monic."
+                f"Polynomial degree must not exceed {max_degree} and must be monic."
             )
         super().__init__(self.message)
 
@@ -26,8 +24,6 @@ def parse_poly(polystr, max_deg=None):
     parse polynomial into csv format
     e.g. x^4-1  ->  -1,0,0,1
     """
-    if max_deg is None:
-        max_deg = np.infty
     polystr = polystr.replace(" ", "").lower()
     L = polystr.replace("-", "+-").split("+")
     degree = 0
@@ -43,6 +39,7 @@ def parse_poly(polystr, max_deg=None):
         if "*" not in term:
             term = term.replace("x", "*x")
         L[i] = term
+
         # get degree of polynomial
         d = 0
         try:
@@ -64,8 +61,8 @@ def parse_poly(polystr, max_deg=None):
             coefs[0] += c
         except ValueError:
             if len(term) > 0:
-                d = int(term.split("^")[-1])
                 try:
+                    d = int(term.split("^")[-1])
                     c = int(term.split("*")[0])
                 except ValueError:
                     raise PolynomialFormatError()
@@ -73,8 +70,10 @@ def parse_poly(polystr, max_deg=None):
             else:
                 raise PolynomialFormatError()
 
-    if coefs[-1] != 1 or degree > max_deg:
-        raise PolynomialConstraintError(max_deg)
+    if coefs[-1] != 1:
+        raise PolynomialConstraintError(None, coefs[-1])
+    if max_deg is not None and degree > max_deg:
+        raise PolynomialConstraintError(max_deg, coefs[-1])
 
     rstring = ",".join(map(str, coefs))
     return rstring
