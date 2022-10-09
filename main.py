@@ -30,7 +30,7 @@ app = FastAPI(
 )
 
 
-def base_factor(poly: str, opts: OptsType):
+def base_factor(poly: str, opts: OptsType, verbose=False):
     """Base LLL request processor"""
     # Get data from request
     command = opts.to_list(poly)
@@ -43,7 +43,10 @@ def base_factor(poly: str, opts: OptsType):
 
     # Catch C-level errors
     if exit_code == 1:
-        detail = stdout.decode("utf-8")+"\n"+stderr.decode("utf-8")
+        if verbose:
+            detail = stdout.decode("utf-8")+"\n"+stderr.decode("utf-8")
+        else:
+            detail = stderr.decode("utf-8")
         raise HTTPException(status_code=500, detail=detail)
 
     return stdout.decode("utf-8")
@@ -79,7 +82,7 @@ async def lll_form_data_factor(
     try:
         opts = LLLOptions(**opts_kw)
         rq = FactorRequest(poly=poly, opts=opts)
-        out = base_factor(rq.poly, rq.opts)
+        out = base_factor(rq.poly, rq.opts, verbose=True)
     except ValidationError as e:
         failed = True
         out = str(e)
