@@ -3,10 +3,10 @@ units: unit1 unit2
 all: algebraic poly unit1 unit2
 
 algebraic:
-	gcc -Wall -Wextra -o bin/mpz_algebraic src/mpz_algebraic.c -lgmp -lmpfr -lmpc
+	gcc -Wall -Wextra -o bin/mpz_algebraic src/c/mpz_algebraic.c -lgmp -lmpfr -lmpc
 
 poly:
-	gcc -Wall -Wextra -o bin/lll_factor src/lll_factor.c -lgmp -lmpfr -lmpc
+	gcc -Wall -Wextra -o bin/lll_factor src/c/lll_factor.c -lgmp -lmpfr -lmpc
 
 unit1:
 	./factorize.sh `cat test/test_poly.txt` > test/make_output.txt
