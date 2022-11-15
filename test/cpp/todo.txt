@@ -1,0 +1,3 @@
+finish string constuctor for Polynomial class
+write unit tests (using string constructor)
+    - divide, gcd, derivative

@@ -3,6 +3,24 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <regex>
+
+// TODO: handle errors here
+template <typename T, typename R>
+T assign_value(R v, int precision) {
+    if constexpr (std::is_same_v<T, mpz_class>)
+        return mpz_class(v);
+    if constexpr (std::is_same_v<T, mpq_class>){
+        T val;
+        val = mpq_class(v);
+        val.canonicalize();
+        return val;
+    }
+    if constexpr (std::is_same_v<T, mpf_class>)
+        return mpf_class(v,precision);
+
+    throw std::invalid_argument( "Only mpz, mpq, and mpf class assignments are supported." );
+}
 
 template <typename T>
 class Polynomial {
@@ -21,15 +39,27 @@ class Polynomial {
     // Construct zero polynomial
     Polynomial(int len) {
         std::vector<T> c(len);
-        length = len;
-        for (int i = 0; i < length; i++)
+        for (int i = 0; i < len; i++)
             c[i] = 0;
         init(c);
     };
 
     // Copy constructor
-    Polynomial(const Polynomial &p){
+    Polynomial(const Polynomial<T> &p){
         init(p.coeffs);
+    };
+
+    // String constructor
+    Polynomial(std::string, int=64);
+
+    // Comparison
+    bool operator== (Polynomial<T> &p) {
+        int len = std::min(length,p.length);
+        for (int i = 0; i < len; i++) {
+            if (coeffs[i] != p.coeffs[i])
+                return false;
+        }
+        return true;
     }
 
     std::string str();
@@ -39,6 +69,8 @@ class Polynomial {
 
     private:
     void init(std::vector<T> c) {
+        if constexpr (!(std::is_same_v<T, mpz_class> | std::is_same_v<T,mpq_class> | std::is_same_v<T,mpf_class>))
+            throw std::invalid_argument( "Only mpz, mpq, and mpf class Polynomials are supported." );
         coeffs = c;
         length = coeffs.size();
         int i = length -1;
@@ -49,6 +81,90 @@ class Polynomial {
         is_zero = (degree == -1);
     }
 };
+
+template <typename T>
+Polynomial<T>::Polynomial(std::string str, int precision){
+    str = std::regex_replace(str, std::regex("\\s"), "");
+    str = std::regex_replace(str, std::regex("-"), "+-");
+
+    std::regex monomial_re(R"([x|X](\^[0-9]*)?$)");
+
+    // Split string on '+'
+    std::string segment;
+    std::istringstream stream(str);
+    std::vector<std::string> L;
+    while(std::getline(stream, segment, '+'))
+       L.push_back(segment);
+
+
+    int _degree = 0;
+    int d = 0;
+
+    // Regularize terms
+    for (int i = 0; i < L.size(); i++) {
+        std::string term = L[i];
+        if (term.size() == 0)
+            continue;
+        term = std::regex_replace(term, std::regex("-x"), "-1*x");
+        if (term.at(0) == 'x')
+            term = std::regex_replace(term, std::regex("x"), "1*x");
+        if (term.back() == 'x')
+            term = std::regex_replace(term, std::regex("x"), "x^1");
+        if (term.find('*') == std::string::npos)
+            term = std::regex_replace(term, std::regex("x"), "*x");
+
+        L[i] = term;
+        // get degree of polynomial
+        d = 0;
+
+        if (term.find('^') != std::string::npos){
+            std::smatch match;
+            if (std::regex_search(term,match,monomial_re)){
+                std::string power;
+                std::string m(match[0]);
+                power = std::regex_replace(m, std::regex(R"(x\^)"), "");
+                d = std::atoi(power.c_str());
+                
+            } else {
+                std::string err("Improperly formatted polynomial term `");
+                err = err + term + "`";
+                throw std::invalid_argument(err);
+            }
+        } 
+
+        if (d > _degree)
+            _degree = d;
+    }
+
+    // Create coefficients vector
+    
+    std::vector<T> coeffs(_degree+1);
+    for (int i=0; i<coeffs.size(); i++)
+        coeffs[i] = assign_value<T,int>(0,precision);
+
+    for (int i = 0; i < L.size(); i++) {
+        std::string term = L[i];
+        if (term.size() == 0)
+            continue;
+        if (term.find('^') != std::string::npos){
+            std::smatch match;
+            if (std::regex_search(term,match,monomial_re)){
+                std::string power;
+                std::string m(match[0]);
+                power = std::regex_replace(m, std::regex(R"(x\^)"), "");
+                d = std::atoi(power.c_str());
+
+                std::string coef = std::regex_replace(term, monomial_re, "");
+                coef = std::regex_replace(coef, std::regex("\\*"), "");
+                coeffs[d] += assign_value<T,std::string>(coef,precision);
+            }
+        } else {
+            coeffs[0] += assign_value<T,std::string>(term,precision);
+        }
+    }
+
+    init(coeffs);
+}
 
 // Pad a polynomial length to a specified length
 template <typename T>
