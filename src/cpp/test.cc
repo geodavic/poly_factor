@@ -2,17 +2,11 @@
 #include <iostream>
 
 int main() {
-   
-    std::vector<mpz_class> c1 {1,4,6,4,1};
-    Polynomial<mpz_class> p(c1);
-    Polynomial<mpz_class> pp = derivative(p);
 
-    p.print();
-    pp.print();
+    std::vector<mpz_class> nums{20,60,16,24};
+    mpz_class g = lcm(nums);
 
-    bool monic = true;
-    Polynomial<mpz_class> g = gcd(p,pp,monic=monic);
-    g.print();
+    std::cout << g << std::endl;
 
     return 0; 
 }
