@@ -12,6 +12,8 @@ Polynomial<mpz_class> P10("20x^3 + 40");
 Polynomial<mpz_class> P11("15x^2 + 30");
 Polynomial<mpz_class> P12("x^8 + x^7 - 2 x^6 + 6 x^5 - 18 x^4 - 4 x^3 - 19 x^2 - 23 x - 6");
 Polynomial<mpz_class> P13("-23 - 38 x - 12 x^2 - 72 x^3 + 30 x^4 - 12 x^5 + 7 x^6 + 8 x^7");
+Polynomial<mpz_class> P14("204 x^8 + 17 x^7 - 83 x^6 - 189 x^5 - 37 x^4 + 163 x^3 + 9 x - 48");
+Polynomial<mpz_class> P15("51 x^5 + 17 x^4 - 8 x^3 - 45 x^2 - 19 x + 16");
 
 Polynomial<mpq_class> Q1("3/4x^5 - 6/7");
 Polynomial<mpq_class> Q2("2/3x^2 - 3/2x + 1/5");
@@ -131,6 +133,11 @@ bool test_gcd() {
     Polynomial<mpz_class> G7 = gcd(P12,P13);
     Polynomial<mpz_class> GG7("x^3+2x+1");
     assert (G7 == GG7);
+
+    Polynomial<mpz_class> G8 = gcd(P14,P15);
+    Polynomial<mpz_class> GG8("17x^3+3x-16");
+    assert (G8 == GG8);
+
 
     std::cout << "passed" << std::endl;
     return true;
