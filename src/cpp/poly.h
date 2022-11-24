@@ -1,4 +1,5 @@
 #include "gcd.h"
+#include <mpc.h>
 #include <gmpxx.h>
 #include <iostream>
 #include <regex>
@@ -21,6 +22,19 @@ template <typename T, typename R> T assign_value(R v, int precision) {
 
   throw std::invalid_argument(
       "Only mpz, mpq, and mpf class assignments are supported.");
+}
+
+// Assign a mpf/mpz/mpq class to mpc
+template <typename T> void assign_mpc(mpc_t c, T v) {
+	if constexpr (std::is_same_v<T, mpz_class>) {
+		mpc_set_z(c,v.get_mpz_t(),MPC_RNDNN);	
+	}
+	if constexpr (std::is_same_v<T, mpq_class>) {
+		mpc_set_q(c,v.get_mpq_t(),MPC_RNDNN);	
+	}
+	if constexpr (std::is_same_v<T, mpf_class>) {
+		mpc_set_f(c,v.get_mpf_t(),MPC_RNDNN);	
+	}
 }
 
 template <typename T> class Polynomial {
@@ -456,3 +470,30 @@ Polynomial<T> gcd(const Polynomial<T> p1, const Polynomial<T> p2) {
     return g;
   }
 }
+
+// Evaluate a polynomial at (complex valued) input using Horner's method.
+// Precision of output is set by precision of input
+template <typename T>
+void evaluate(Polynomial<T> p, const mpc_t input, mpc_t *output) {
+	mpfr_prec_t precisionx, precisiony, precision;
+	mpc_get_prec2(&precisionx,&precisiony,input);
+	precision = std::min(precisionx,precisiony);
+	mpc_set_prec(*output, precision);
+
+	mpc_t bi; mpc_init2(bi,precision);
+	mpc_t dummy; mpc_init2(dummy,precision);
+	int i;
+	
+	assign_mpc<T>(bi,p.coeffs[p.length()-1]);
+	for(i = p.length()-2; i>=0; i--) {
+		mpc_mul(bi,bi,input,MPC_RNDNN);
+		assign_mpc<T>(dummy,p.coeffs[i]);
+		mpc_add(bi,dummy,bi,MPC_RNDNN);
+	}
+	mpc_set(*output,bi,MPC_RNDNN);
+	mpc_clear(dummy);
+	mpc_clear(bi);
+}
+
+// Find a root of a polynomial using Halley's method
+// Returns 1 on success and 0 on failure

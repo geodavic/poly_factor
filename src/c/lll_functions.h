@@ -458,7 +458,6 @@ void gcd(mpz_t *poly1, mpz_t *poly2, mpz_t *gcd, int poly_len){
 
 //find irreducible factor of poly, poly=d*q. Return zero if no factors found, return 1 if factor is found
 //Warning: this sets d,q to zero upon failure.
-//only finds real roots (for a slight speedup if that's all that is needed)- see below for more general version
 //notes: - might be able to reduce down to at most one dummy variable of each data type
 int find_factor_cx(mpz_t *poly, mpz_t *d, mpz_t *q, int poly_len,int PRECISION,int verbosity, double d_delta, int stop_deg){
     int i,j,iter=0,iter_max=3;
