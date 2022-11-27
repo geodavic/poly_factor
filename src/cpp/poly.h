@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <math.h>
 
 // TODO: handle errors here
 template <typename T, typename R> T assign_value(R v, int precision) {
@@ -496,4 +497,77 @@ void evaluate(Polynomial<T> p, const mpc_t input, mpc_t *output) {
 }
 
 // Find a root of a polynomial using Halley's method
-// Returns 1 on success and 0 on failure
+// Returns 1 on success and 0 on failure. Terminates when log10(|xn-x(n+1)|) <- log10_thresh.
+// Note: Polynomial must have no repeated roots; otherwise convergence isn't guaranteed.
+template <typename T>
+int rootfind(Polynomial<T> p, mpc_t start, mpc_t root, int log10_thresh){
+	mpc_rnd_t MODE=MPC_RNDNN;
+	
+	// If p is linear, the root is already known: -p[0]
+	if (p.length()<=2) {
+		assign_mpc<T>(root,p.coeffs[0]);
+		mpc_ui_sub(root,0,root,MODE);
+		return 1;
+	}
+
+	// Align precision of output with start
+	mpfr_prec_t precisionx, precisiony, precision;
+	mpc_get_prec2(&precisionx,&precisiony,start);
+	precision = std::min(precisionx,precisiony);
+	mpc_set_prec(root, precision);
+
+	int i,c=0;
+	int max_iterates=100;
+	mpfr_t diff; mpfr_init2(diff,precision);
+	mpfr_t thresh; mpfr_init2(thresh,precision);
+
+	mpc_t quot; mpc_init2(quot,precision);
+	mpc_t dummy; mpc_init2(dummy,precision);
+	mpc_t eval_p; mpc_init2(eval_p,precision);
+	mpc_t eval_pp; mpc_init2(eval_pp,precision);
+	mpc_t eval_ppp; mpc_init2(eval_ppp,precision);
+
+	Polynomial<T> pp = derivative(p);
+	Polynomial<T> ppp = derivative(pp);
+
+	mpfr_set_ui(thresh,10,MPFR_RNDN);
+  mpfr_pow_ui(thresh,thresh,log10_thresh,MPFR_RNDN);
+  mpfr_ui_div(thresh,1,thresh,MPFR_RNDN);
+	mpfr_set_ui(diff,1,MPFR_RNDN);
+	mpc_set(root,start,MODE);
+
+	while(mpfr_cmp(diff,thresh)>=0&&c<max_iterates){
+		c++;
+		evaluate(p,root,&eval_p);
+		evaluate(pp,root,&eval_pp);
+		evaluate(ppp,root,&eval_ppp);
+
+		mpc_set_ui(quot,2,MODE);
+		mpc_mul(quot,quot,eval_pp,MODE);
+		mpc_set_ui(quot,2,MODE);
+		mpc_mul(quot,quot,eval_pp,MODE);
+		mpc_mul(quot,quot,eval_pp,MODE);
+		mpc_mul(dummy,eval_p,eval_ppp,MODE);
+		mpc_sub(quot,quot,dummy,MODE);
+		mpc_set_ui(dummy,2,MODE);
+		mpc_mul(dummy,dummy,eval_p,MODE);
+		mpc_mul(dummy,dummy,eval_pp,MODE);
+		mpc_div(quot,dummy,quot,MODE);
+
+		mpc_abs(diff,quot,MPFR_RNDN);
+		mpc_sub(root,root,quot,MODE);
+	}
+
+	mpfr_clear(diff);
+	mpfr_clear(thresh);
+	mpc_clear(quot); 
+	mpc_clear(dummy);
+	mpc_clear(eval_p);
+	mpc_clear(eval_pp);
+	mpc_clear(eval_ppp);
+
+	if (c==max_iterates)
+		return 0;
+	else
+		return 1;
+}
